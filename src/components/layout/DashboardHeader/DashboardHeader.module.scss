@@ -1,0 +1,67 @@
+@use "@styles/variables" as *;
+@use "sass:color";
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2rem;
+  background-color: #fff;
+  border-bottom: 1px solid #e5e7eb;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 1rem;
+  }
+}
+
+.left h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: $brand-dark;
+
+  @media (max-width: 768px) {
+    font-size: 1.1rem;
+  }
+}
+
+.right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+
+  button {
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    font-size: 1rem;
+  }
+}
+
+.themeToggle {
+  font-size: 1.3rem;
+  line-height: 1;
+  transition: transform 0.2s ease;
+  &:hover {
+    transform: scale(1.2);
+  }
+}
+
+.logout {
+  background-color: $brand-primary;
+  color: white;
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  font-weight: 600;
+  transition: background-color 0.2s ease;
+
+  &:hover,
+  &:focus {
+    background-color: color.scale($brand-primary, $lightness: -10%);
+  }
+}

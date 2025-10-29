@@ -1,0 +1,9 @@
+@use "@styles/variables" as *;
+
+.footer {
+  background-color: $brand-dark;
+  color: #fff;
+  text-align: center;
+  padding: 1.5rem;
+  font-size: 0.9rem;
+}

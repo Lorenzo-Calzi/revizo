@@ -1,0 +1,32 @@
+@use "@styles/variables" as *;
+@use "@styles/mixins" as *;
+
+.hero {
+  text-align: center;
+  padding: 6rem 1rem 4rem;
+
+  h1 {
+    color: $brand-dark;
+    font-size: clamp(2rem, 5vw, 3.5rem);
+  }
+
+  p {
+    margin-top: 1.5rem;
+    color: #555;
+    font-size: 1.1rem;
+    max-width: 600px;
+    margin-inline: auto;
+  }
+
+  button {
+    margin-top: 2rem;
+  }
+}
+
+.features {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.5rem;
+  max-width: 900px;
+  margin: 3rem auto;
+}
