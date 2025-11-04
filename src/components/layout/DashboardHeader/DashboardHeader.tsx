@@ -6,10 +6,7 @@ interface DashboardHeaderProps {
     onLogout?: () => void;
 }
 
-export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
-    userName = "Mario Rossi",
-    onLogout
-}) => {
+export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ userName, onLogout }) => {
     const [darkMode, setDarkMode] = useState(false);
 
     // Persistenza tema
@@ -20,7 +17,7 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
     return (
         <header className={styles.header}>
             <div className={styles.left}>
-                <h2>Benvenuto 👋 {userName}</h2>
+                <h2>{userName}</h2>
             </div>
 
             <div className={styles.right}>

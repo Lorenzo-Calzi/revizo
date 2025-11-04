@@ -18,13 +18,13 @@
     "baseUrl": "./",
     "paths": {
       "@/*": ["src/*"],
-      "@pages/*": ["src/pages/*"],
+      "@context/*": ["src/context/*"],
       "@components/*": ["src/components/*"],
+      "@pages/*": ["src/pages/*"],
       "@layouts/*": ["src/layouts/*"],
-      "@styles/*": ["src/styles/*"],
-      "@hooks/*": ["src/hooks/*"],
-      "@utils/*": ["src/utils/*"],
       "@services/*": ["src/services/*"],
+      "@styles/*": ["src/styles/*"],
+      "@utils/*": ["src/utils/*"],
       "@types/*": ["src/types/*"]
     },
     "typeRoots": ["./src/types", "./node_modules/@types"]

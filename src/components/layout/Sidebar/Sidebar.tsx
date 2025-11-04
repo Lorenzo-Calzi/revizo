@@ -63,6 +63,15 @@ export const Sidebar = () => {
                     </NavLink>
 
                     <NavLink
+                        to="/dashboard/profile"
+                        className={({ isActive }) =>
+                            `${styles.link} ${isActive ? styles.active : ""}`
+                        }
+                    >
+                        Profilo
+                    </NavLink>
+
+                    <NavLink
                         to="/dashboard/feedback"
                         className={({ isActive }) =>
                             `${styles.link} ${isActive ? styles.active : ""}`
@@ -73,13 +82,21 @@ export const Sidebar = () => {
                     </NavLink>
 
                     <NavLink
-                        to="/dashboard/settings"
+                        to="/dashboard/reviews"
                         className={({ isActive }) =>
                             `${styles.link} ${isActive ? styles.active : ""}`
                         }
-                        onClick={() => setIsOpen(false)}
                     >
-                        Impostazioni
+                        Recensioni
+                    </NavLink>
+
+                    <NavLink
+                        to="/dashboard/restaurants"
+                        className={({ isActive }) =>
+                            `${styles.link} ${isActive ? styles.active : ""}`
+                        }
+                    >
+                        I tuoi locali
                     </NavLink>
                 </nav>
             </aside>

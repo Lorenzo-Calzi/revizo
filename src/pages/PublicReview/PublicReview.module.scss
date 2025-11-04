@@ -1,0 +1,99 @@
+@use "sass:color";
+@use "@styles/variables" as *;
+
+.container {
+  max-width: 500px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+  text-align: center;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  margin-top: 5vh;
+
+  h1 {
+    font-size: 1.6rem;
+    font-weight: 600;
+    color: $brand-dark;
+  }
+
+  .subtitle {
+    color: $gray-600;
+    font-size: 0.95rem;
+    margin-bottom: 1.5rem;
+  }
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+
+  textarea {
+    border: 1px solid $gray-300;
+    border-radius: 10px;
+    padding: 0.8rem;
+    resize: none;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    transition: border-color 0.2s;
+
+    &:focus {
+      border-color: $brand-primary;
+      outline: none;
+    }
+  }
+
+  button {
+    background: $brand-primary;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 0.8rem 1rem;
+    font-weight: 600;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: background 0.2s ease;
+
+    &:hover {
+      background: color.adjust($brand-primary, $lightness: -5%);
+    }
+
+    &:disabled {
+      background: $gray-300;
+      cursor: not-allowed;
+    }
+  }
+}
+
+.ratingGroup {
+  display: flex;
+  justify-content: center;
+  gap: 0.4rem;
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+
+  .star {
+    cursor: pointer;
+    color: $gray-300;
+    transition: color 0.2s ease, transform 0.1s ease;
+
+    &:hover {
+      transform: scale(1.1);
+    }
+
+    &.active {
+      color: $brand-primary;
+    }
+  }
+}
+
+.error {
+  color: $danger;
+  font-weight: 500;
+}
+
+.loading {
+  color: $gray-600;
+  font-style: italic;
+}

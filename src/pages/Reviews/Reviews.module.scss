@@ -1,0 +1,382 @@
+@use "sass:color";
+@use "@styles/variables" as *;
+
+.reviews {
+  padding: 2rem;
+
+  .header {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    margin-bottom: 2rem;
+
+    h1 {
+      font-size: 1.6rem;
+      margin-bottom: 1rem;
+      color: $brand-dark;
+    }
+
+    .selectRestaurant {
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+      margin-bottom: 1rem;
+
+      label {
+        font-size: 0.9rem;
+        font-weight: 500;
+        color: $gray-700;
+      }
+
+      select {
+        border: 1px solid $gray-300;
+        border-radius: 8px;
+        padding: 0.6rem 0.8rem;
+        font-size: 0.9rem;
+        width: 100%;
+        background: #fff;
+        transition: border-color 0.2s ease;
+
+        &:focus {
+          border-color: $brand-primary;
+          outline: none;
+        }
+      }
+
+      @media (min-width: 768px) {
+        flex-direction: row;
+        align-items: center;
+        gap: 0.8rem;
+
+        label {
+          margin-bottom: 0;
+        }
+
+        select {
+          max-width: 280px;
+        }
+      }
+    }
+
+    .stats {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+
+      .statBox {
+        background: $gray-100;
+        border-radius: 12px;
+        padding: 1rem 1.5rem;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        font-size: 1.1rem;
+
+        strong {
+          font-size: 1.4rem;
+          margin: 0 0.3rem;
+        }
+
+        p {
+          font-size: 0.85rem;
+          color: $gray-600;
+        }
+      }
+    }
+    .chart {
+      margin-bottom: 2rem;
+
+      h2 {
+        font-size: 1.2rem;
+        margin-bottom: 1rem;
+        color: $brand-dark;
+      }
+
+      p {
+        text-align: center;
+        color: $gray-600;
+        font-style: italic;
+      }
+    }
+  }
+
+  .loading {
+    text-align: center;
+    color: $gray-600;
+    font-style: italic;
+    margin: 2rem 0;
+  }
+
+  .list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.2rem;
+  }
+
+  .review {
+    background: #fff;
+    border: 1px solid $gray-200;
+    border-radius: 10px;
+    padding: 1rem 1.2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+
+    .rating {
+      font-weight: 600;
+      color: $brand-primary;
+    }
+
+    .comment {
+      font-size: 0.95rem;
+      color: $gray-800;
+      line-height: 1.4;
+    }
+
+    .badge {
+      font-size: 0.75rem;
+      padding: 0.25rem 0.5rem;
+      border-radius: 6px;
+      font-weight: 600;
+      text-transform: uppercase;
+      margin-left: 0.5rem;
+
+      &.public {
+        background: #eef2ff;
+        color: $brand-primary;
+      }
+
+      &.verified {
+        background: #dcfce7;
+        color: #166534;
+      }
+    }
+
+    .date {
+      font-size: 0.8rem;
+      color: $gray-500;
+      text-align: right;
+    }
+  }
+
+  .responseForm {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+
+    textarea {
+      border: 1px solid $gray-300;
+      border-radius: 8px;
+      padding: 0.6rem 0.8rem;
+      font-size: 0.9rem;
+      resize: vertical;
+    }
+
+    button {
+      align-self: flex-end;
+      background: $brand-primary;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 0.5rem 1rem;
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: 0.2s;
+
+      &:hover {
+        background: color.adjust($brand-primary, $lightness: -5%);
+      }
+
+      &:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+      }
+    }
+  }
+
+  .responseBox {
+    background: $gray-100;
+    border-left: 3px solid $brand-primary;
+    border-radius: 8px;
+    padding: 0.8rem 1rem;
+    margin-top: 0.5rem;
+
+    .responseText {
+      font-size: 0.9rem;
+      color: $gray-800;
+      margin-bottom: 0.3rem;
+    }
+
+    .responseDate {
+      font-size: 0.75rem;
+      color: $gray-500;
+    }
+  }
+
+  .empty {
+    text-align: center;
+    color: $gray-600;
+    font-style: italic;
+    margin-top: 2rem;
+  }
+}
+
+.addReview {
+  margin-bottom: 2rem;
+  background: #fff;
+  border: 1px solid $gray-200;
+  border-radius: 10px;
+  padding: 1.5rem;
+
+  h2 {
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
+    color: $brand-dark;
+  }
+
+  form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+
+    label {
+      font-weight: 500;
+    }
+
+    select,
+    textarea {
+      font-size: 1rem;
+      border-radius: 6px;
+      border: 1px solid $gray-300;
+      padding: 0.5rem 0.7rem;
+      resize: vertical;
+      outline: none;
+
+      &:focus {
+        border-color: $brand-primary;
+        box-shadow: 0 0 0 1px $brand-primary;
+      }
+    }
+
+    button {
+      align-self: flex-start;
+      background-color: $brand-primary;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 0.6rem 1.2rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.2s;
+
+      // &:hover:not(:disabled) {
+      //   background-color: darken($brand-primary, 7%);
+      // }
+
+      &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+    }
+  }
+}
+
+.footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.deleteBtn {
+  background: transparent;
+  border: none;
+  color: #ff3131;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: 0.2s;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+
+  label {
+    display: block;
+    font-size: 0.85rem;
+    margin-bottom: 0.3rem;
+    font-weight: 500;
+  }
+
+  select,
+  input[type="date"] {
+    border: 1px solid $gray-300;
+    border-radius: 8px;
+    padding: 0.5rem 0.8rem;
+    font-size: 0.9rem;
+  }
+}
+
+/* MODALE */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+}
+
+.modal {
+  background: #fff;
+  border-radius: 12px;
+  padding: 2rem;
+  max-width: 400px;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+
+  p {
+    margin-bottom: 1.5rem;
+    font-size: 1rem;
+  }
+
+  .modalActions {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+  }
+
+  .confirm {
+    background: #ff3131;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 0.6rem 1rem;
+    cursor: pointer;
+
+    &:hover {
+      background: #e92b2b;
+    }
+  }
+
+  .cancel {
+    background: #f3f4f6;
+    border: none;
+    border-radius: 8px;
+    padding: 0.6rem 1rem;
+    cursor: pointer;
+
+    &:hover {
+      background: #e2e2e2;
+    }
+  }
+}
