@@ -1,5 +1,5 @@
 import { Routes, Route, Navigate } from "react-router-dom";
-import { MainLayout } from "@layouts/MainLayout/MainLayout";
+import MainLayout from "@layouts/MainLayout/MainLayout";
 import { ProtectedRoute } from "@components/ProtectedRoute";
 
 // Dashboard pages
@@ -12,10 +12,13 @@ import Account from "@pages/Dashboard/Settings/Account/Account";
 
 // Public review flow
 import PublicReviewPage from "@pages/PublicReview/PublicReview";
+import Home from "./pages/Home/Home";
 
 export default function App() {
     return (
         <Routes>
+            <Route path="/" element={<Home />} />
+
             {/* Public QR route */}
             <Route path="/r/:slug" element={<PublicReviewPage />} />
 
@@ -38,6 +41,11 @@ export default function App() {
                     <Route path="account" element={<Account />} />
                 </Route>
             </Route>
+
+            <Route
+                path="/dashboard/restaurants/:id"
+                element={<Navigate to="/dashboard/reviews" replace />}
+            />
 
             {/* Redirect/404 se vuoi */}
             <Route path="*" element={<Navigate to="/dashboard" replace />} />

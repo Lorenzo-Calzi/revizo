@@ -1,9 +1,17 @@
 @use "@styles/variables" as *;
 
+/* ----------------------------------------------------
+   FOOTER
+---------------------------------------------------- */
 .footer {
-  background-color: $brand-dark;
-  color: #fff;
   text-align: center;
-  padding: 1.5rem;
-  font-size: 0.9rem;
+  padding: 1rem;
+
+  background: var(--card-bg, #ffffff);
+  color: var(--text-muted, #64748b);
+
+  border-top: 1px solid var(--border, #e2e8f0);
+  font-size: 0.85rem;
+
+  transition: background 0.3s ease, color 0.3s ease, border 0.3s ease;
 }

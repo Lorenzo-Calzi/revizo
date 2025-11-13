@@ -1,0 +1,175 @@
+@use "@styles/variables" as *;
+
+/* ===== STRUTTURA GENERALE ===== */
+.analytics {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  background: var(--bg, #f8fafc);
+  color: var(--text, #0f172a);
+  transition: background 0.3s ease, color 0.3s ease;
+
+  @media (max-width: 600px) {
+    gap: 1.5rem;
+  }
+
+  /* Dark mode: solo micro-tweak grafici, NO override variabili */
+  [data-theme="dark"] & {
+    .kpiCard,
+    .chartCard {
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+    }
+
+    .active {
+      background: var(--brand-primary, #2563eb);
+      border-color: var(--brand-primary, #2563eb);
+    }
+  }
+}
+
+/* ===== HEADER / RANGE SELECTOR ===== */
+.header {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.rangeSelector {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.rangeBtn {
+  background: var(--card-bg, #ffffff);
+  border: 1px solid var(--border, #e2e8f0);
+  color: var(--text, #0f172a);
+  border-radius: 8px;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.1s ease;
+  font-weight: 500;
+
+  &:hover {
+    background: var(--hover-bg, #f1f5f9);
+    transform: translateY(-1px);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--brand-primary, #2563eb);
+    outline-offset: 2px;
+  }
+}
+
+.active {
+  background: var(--brand-primary, #2563eb);
+  border-color: var(--brand-primary, #2563eb);
+}
+
+/* ===== KPI GRID ===== */
+.kpiGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+}
+
+.kpiCard {
+  background: var(--card-bg, #ffffff);
+  border: 1px solid var(--border, #e2e8f0);
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  text-align: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.08);
+  }
+}
+
+.success {
+  border-color: #86efac;
+  color: #15803d;
+  background: #dcfce7;
+
+  [data-theme="dark"] & {
+    background: #052e16;
+    border-color: #14532d;
+    color: #4ade80;
+  }
+}
+
+.error {
+  border-color: #fecaca;
+  color: #b91c1c;
+  background: #fee2e2;
+
+  [data-theme="dark"] & {
+    background: #450a0a;
+    border-color: #7f1d1d;
+    color: #fca5a5;
+  }
+}
+
+/* ===== CHARTS GRID ===== */
+.chartsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1.5rem;
+  align-items: start;
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.chartCard {
+  background: var(--card-bg, #ffffff);
+  border: 1px solid var(--border, #e2e8f0);
+  border-radius: 12px;
+  padding: 1.25rem 1rem 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 0.75rem;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.08);
+  }
+
+  h3 {
+    color: var(--text, #0f172a);
+    margin-bottom: 0.5rem;
+  }
+
+  svg {
+    overflow: visible;
+  }
+}
+
+/* ===== SKELETON PLACEHOLDERS ===== */
+.kpiGrid :global(.skeleton),
+.chartsGrid :global(.skeleton) {
+  background: linear-gradient(
+    90deg,
+    var(--skeleton-base, #e5e7eb) 25%,
+    var(--skeleton-highlight, #f3f4f6) 50%,
+    var(--skeleton-base, #e5e7eb) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}

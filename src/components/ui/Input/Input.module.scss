@@ -1,34 +1,67 @@
 @use "@styles/variables" as *;
 @use "sass:color";
 
+/* ----------------------------------------------------
+   WRAPPER
+---------------------------------------------------- */
 .wrapper {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.35rem;
   width: 100%;
 }
 
+/* ----------------------------------------------------
+   LABEL
+---------------------------------------------------- */
 .label {
   font-weight: 600;
   font-size: 0.9rem;
-  color: $brand-dark;
+  color: var(--text, #0f172a);
 }
 
+/* ----------------------------------------------------
+   INPUT
+---------------------------------------------------- */
 .input {
-  border: 1.5px solid #ccc;
-  border-radius: 8px;
+  width: 100%;
   padding: 0.6rem 0.8rem;
-  font-size: 1rem;
-  transition: border-color 0.2s ease;
 
-  &:focus {
-    border-color: $brand-primary;
+  background: var(--card-bg, #ffffff);
+  color: var(--text, #0f172a);
+  font-size: 1rem;
+
+  border-radius: 8px;
+  border: 1.5px solid var(--border, #cbd5e1);
+
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+
+  &::placeholder {
+    color: var(--text-muted, #94a3b8);
+  }
+
+  &:focus-visible {
     outline: none;
-    box-shadow: 0 0 0 2px color.scale($brand-primary, $lightness: 40%);
+    border-color: var(--brand-primary, #2563eb);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    background: var(--hover-bg, #f1f5f9);
   }
 }
 
+/* ----------------------------------------------------
+   ERROR TEXT
+---------------------------------------------------- */
 .error {
-  color: color.scale(red, $lightness: -10%);
   font-size: 0.8rem;
+  color: #dc2626; /* semantic red */
+  margin-top: 0.15rem;
+
+  [data-theme="dark"] & {
+    color: #f87171;
+  }
 }

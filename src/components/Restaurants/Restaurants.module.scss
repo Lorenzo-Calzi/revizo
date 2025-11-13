@@ -1,0 +1,173 @@
+@use "sass:color";
+@use "@styles/variables" as *;
+
+/* ----------------------------------------------------
+   WRAPPER
+---------------------------------------------------- */
+.restaurants {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+
+  background: var(--card-bg, #ffffff);
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 12px;
+  padding: 1.5rem;
+
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+  transition: background 0.3s ease, border 0.3s ease;
+}
+
+/* ----------------------------------------------------
+   ADD RESTAURANT FORM
+---------------------------------------------------- */
+.addForm {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+
+  input {
+    flex: 1 1 160px;
+
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--border, #e5e7eb);
+    border-radius: 8px;
+
+    background: var(--card-bg, #ffffff);
+    color: var(--text, #0f172a);
+
+    font-size: 0.9rem;
+    transition: border-color 0.2s ease;
+
+    &:focus-visible {
+      outline: 2px solid var(--brand-primary, #2563eb);
+      outline-offset: 2px;
+    }
+  }
+
+  button {
+    background: var(--brand-primary, #2563eb);
+    color: #fff;
+
+    border: none;
+    border-radius: 8px;
+
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+
+    font-weight: 500;
+    transition: background 0.2s ease, transform 0.15s ease;
+
+    &:hover {
+      background: var(--brand-primary-hover, color.adjust($brand-primary, $lightness: -5%));
+      transform: translateY(-1px);
+    }
+
+    &:disabled {
+      background: var(--border, #cbd5e1);
+      cursor: not-allowed;
+    }
+  }
+}
+
+/* ----------------------------------------------------
+   LISTA DEI LOCALI
+---------------------------------------------------- */
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+
+  padding: 0;
+  margin: 0;
+}
+
+/* Card singolo locale */
+.item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+
+  gap: 1rem;
+
+  background: var(--hover-bg, #f9fafb);
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 12px;
+
+  padding: 1rem;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+/* ----------------------------------------------------
+   INFO BLOCCO
+---------------------------------------------------- */
+.info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+
+  .slug {
+    font-size: 0.85rem;
+    color: var(--brand-primary, #2563eb);
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
+
+/* ----------------------------------------------------
+   ACTIONS
+---------------------------------------------------- */
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+
+  .buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  button {
+    background: var(--card-bg, #fff);
+    border: 1px solid var(--border, #e5e7eb);
+    border-radius: 8px;
+
+    padding: 0.4rem 0.8rem;
+    cursor: pointer;
+
+    font-size: 0.85rem;
+    font-weight: 500;
+
+    transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
+
+    &:hover {
+      background: var(--hover-bg, #f1f5f9);
+      color: $error;
+      transform: translateY(-1px);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--brand-primary, #2563eb);
+      outline-offset: 2px;
+    }
+  }
+}
+
+/* ----------------------------------------------------
+   DARK MODE COSMETIC ADJUSTMENTS
+---------------------------------------------------- */
+[data-theme="dark"] {
+  .item {
+    border-color: var(--border, #1f2a3a);
+  }
+
+  .actions button:hover {
+    background: rgba(255, 255, 255, 0.05);
+  }
+}

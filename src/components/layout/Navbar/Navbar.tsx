@@ -1,31 +1,34 @@
-import { NavLink } from "react-router-dom";
+import Text from "@/components/ui/Text/Text";
+import { useLocation } from "react-router-dom";
+import { Menu } from "lucide-react";
 import styles from "./Navbar.module.scss";
 
-export const Navbar = () => {
+interface NavbarProps {
+    onMenuClick?: () => void;
+}
+
+export default function Navbar({ onMenuClick }: NavbarProps) {
+    const location = useLocation();
+
+    const pageTitles: Record<string, string> = {
+        "/dashboard": "Panoramica",
+        "/dashboard/profile": "Profilo",
+        "/dashboard/reviews": "Recensioni",
+        "/dashboard/analytics": "Analytics",
+        "/dashboard/settings": "Impostazioni"
+    };
+
+    const currentTitle = pageTitles[location.pathname] || "Dashboard";
+
     return (
         <header className={styles.navbar}>
-            <div className={styles.inner}>
-                <div className={styles.logo}>Revizo</div>
+            <button className={styles.menuBtn} aria-label="Apri menu" onClick={onMenuClick}>
+                <Menu size={22} />
+            </button>
 
-                <nav className={styles.nav}>
-                    <NavLink
-                        to="/"
-                        className={({ isActive }) =>
-                            `${styles.link} ${isActive ? styles.active : ""}`
-                        }
-                    >
-                        Home
-                    </NavLink>
-                    <NavLink
-                        to="/dashboard"
-                        className={({ isActive }) =>
-                            `${styles.link} ${isActive ? styles.active : ""}`
-                        }
-                    >
-                        Dashboard
-                    </NavLink>
-                </nav>
-            </div>
+            <Text variant="title-md" as={"h1"} colorVariant="dark" className={styles.title}>
+                {currentTitle}
+            </Text>
         </header>
     );
-};
+}

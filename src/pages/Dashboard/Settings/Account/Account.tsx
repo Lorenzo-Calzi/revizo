@@ -1,10 +1,10 @@
-import styles from "./Customization.module.scss";
+import Text from "@/components/ui/Text/Text";
+import styles from "./Account.module.scss";
 
 export default function Customization() {
     return (
         <section className={styles.container} aria-labelledby="page-title">
-            <h1 id="page-title">Customizzazione</h1>
-            <p className={styles.subtitle}>Tema, font, logo e colori del mini-sito</p>
+            <Text variant="body">Tema, font, logo e colori del mini-sito</Text>
         </section>
     );
 }

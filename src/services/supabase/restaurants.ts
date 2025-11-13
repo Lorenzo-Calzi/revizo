@@ -23,3 +23,17 @@ export async function deleteRestaurant(id: string) {
     const { error } = await supabase.from("restaurants").delete().eq("id", id);
     if (error) throw error;
 }
+
+export async function updateRestaurant(
+    id: string,
+    updates: { name: string; city: string; slug: string }
+) {
+    const { error } = await supabase.from("restaurants").update(updates).eq("id", id);
+    if (error) throw error;
+}
+
+export async function getRestaurantById(id: string) {
+    const { data, error } = await supabase.from("restaurants").select("*").eq("id", id).single();
+    if (error) throw error;
+    return data;
+}

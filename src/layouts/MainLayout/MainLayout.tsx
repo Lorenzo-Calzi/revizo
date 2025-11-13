@@ -1,18 +1,25 @@
-import React from "react";
-import { Navbar } from "@components/layout/Navbar/Navbar";
-import { Footer } from "@components/layout/Footer/Footer";
+import { useState } from "react";
+import { Outlet } from "react-router-dom";
+import Sidebar from "@components/layout/Sidebar/Sidebar";
+import Navbar from "@components/layout/Navbar/Navbar";
 import styles from "./MainLayout.module.scss";
 
-interface MainLayoutProps {
-    children: React.ReactNode;
-}
+export default function MainLayout() {
+    const [isSidebarOpen, setSidebarOpen] = useState(false);
 
-export const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
+    const toggleSidebar = () => setSidebarOpen(prev => !prev);
+    const closeSidebar = () => setSidebarOpen(false);
+
     return (
         <div className={styles.layout}>
-            <Navbar />
-            <main className={styles.main}>{children}</main>
-            <Footer />
+            <Sidebar isOpen={isSidebarOpen} onClose={closeSidebar} />
+
+            <div className={styles.main}>
+                <Navbar onMenuClick={toggleSidebar} />
+                <div className={styles.content}>
+                    <Outlet />
+                </div>
+            </div>
         </div>
     );
-};
+}

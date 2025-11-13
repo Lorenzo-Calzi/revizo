@@ -1,6 +1,8 @@
 @use "sass:color";
 @use "@styles/variables" as *;
 @use "@styles/mixins" as *;
+@use "@styles/typography" as *;
+@use "@styles/theme" as *;
 
 * {
   box-sizing: border-box;
@@ -8,41 +10,29 @@
   padding: 0;
 }
 
-html[data-theme="dark"] {
-  body {
-    background-color: #0f172a;
-    color: #f8fafc;
-  }
-
-  .card {
-    background-color: #1e293b;
-    color: #f1f5f9;
-  }
-
-  a {
-    color: $brand-primary;
-  }
-}
-
 body {
   font-family: $font-stack;
-  background-color: $bg-color;
+  background-color: $white;
   color: $text-color;
   line-height: 1.5;
+  background: var(--bg);
+  color: var(--text);
+  transition: background 0.3s ease, color 0.3s ease;
 }
 
 a {
   text-decoration: none;
   color: $brand-primary;
-
-  &:hover {
-    text-decoration: underline;
-  }
 }
 
 button {
   font-family: inherit;
   cursor: pointer;
+}
+
+ul {
+  margin: 0;
+  padding: 0;
 }
 
 .visually-hidden {

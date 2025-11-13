@@ -1,9 +1,17 @@
+import Text from "@/components/ui/Text/Text";
 import styles from "./Footer.module.scss";
 
-export const Footer = () => {
+interface FooterProps {
+    shortDescription?: boolean;
+}
+
+export const Footer = ({ shortDescription = false }: FooterProps) => {
     return (
         <footer className={styles.footer}>
-            <p>© {new Date().getFullYear()} Revizo — Tutti i diritti riservati</p>
+            <Text variant="caption" colorVariant="muted">
+                © {new Date().getFullYear()} Revizo
+                {!shortDescription && "— Tutti i diritti riservati."}
+            </Text>
         </footer>
     );
 };
