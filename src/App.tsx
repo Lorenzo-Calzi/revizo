@@ -2,6 +2,12 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import MainLayout from "@layouts/MainLayout/MainLayout";
 import { ProtectedRoute } from "@components/ProtectedRoute";
 
+// Login pages
+import Login from "./pages/Auth/Login";
+import SignUp from "./pages/Auth/SignUp";
+import ResetPassword from "./pages/Auth/ResetPassword";
+import UpdatePassword from "./pages/Auth/UpdatePassword";
+
 // Dashboard pages
 import Overview from "@pages/Dashboard/Overview/Overview";
 import Profile from "@pages/Dashboard/Profile/Profile";
@@ -18,6 +24,10 @@ export default function App() {
     return (
         <Routes>
             <Route path="/" element={<Home />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<SignUp />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/update-password" element={<UpdatePassword />} />
 
             {/* Public QR route */}
             <Route path="/r/:slug" element={<PublicReviewPage />} />
