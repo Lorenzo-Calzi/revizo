@@ -32,6 +32,7 @@ export interface Review {
     updated_at: string;
     response?: string | null;
     response_date?: string | null;
+    tags?: string[];
 }
 
 export interface Restaurant {

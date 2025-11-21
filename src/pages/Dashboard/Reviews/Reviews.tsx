@@ -1,222 +1,311 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "@context/useAuth";
 import { getUserRestaurants } from "@services/supabase/restaurants";
-import {
-    getRestaurantReviews,
-    deleteReview,
-    updateReviewResponse
-} from "@services/supabase/reviews";
+import { getRestaurantReviews, deleteReview } from "@services/supabase/reviews";
 import type { Review, Restaurant } from "@/types/database";
-import styles from "./Reviews.module.scss";
-import {
-    LineChart,
-    Line,
-    XAxis,
-    YAxis,
-    CartesianGrid,
-    Tooltip,
-    ResponsiveContainer
-} from "recharts";
 import Text from "@components/ui/Text/Text";
+import { Globe, ShieldCheck, Trash2, Star } from "lucide-react";
+
+import styles from "./Reviews.module.scss";
+
+const TAG_OPTIONS = [
+    "Qualità del cibo",
+    "Servizio",
+    "Tempi di attesa",
+    "Prezzo",
+    "Pulizia",
+    "Atmosfera"
+];
 
 export default function Reviews() {
     const { user } = useAuth();
     const location = useLocation();
-    const [reviews, setReviews] = useState<Review[]>([]);
-    const [showModal, setShowModal] = useState(false);
-    const [reviewToDelete, setReviewToDelete] = useState<string | null>(null);
-    const [responseText, setResponseText] = useState<{ [key: string]: string }>({});
-    const [loadingResponse, setLoadingResponse] = useState<string | null>(null);
-    const [average, setAverage] = useState<number | null>(null);
-    const [chartData, setChartData] = useState<{ date: string; avg: number }[]>([]);
-    const [filterRating, setFilterRating] = useState<number | null>(null);
-    const [filterDate, setFilterDate] = useState<string | null>(null);
+
+    /** ------------------------ STATE ------------------------ */
     const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
-    const preselectedRestaurantId: string | null = location.state?.restaurantId ?? null;
+    const [reviews, setReviews] = useState<Review[]>([]);
     const [selectedRestaurant, setSelectedRestaurant] = useState<string | null>(null);
+
     const [loading, setLoading] = useState(false);
 
+    const [filterRating, setFilterRating] = useState<number | null>(null);
+    const [filterPeriod, setFilterPeriod] = useState<"all" | "7d" | "30d" | "custom">("all");
+    const [filterDate, setFilterDate] = useState<string | null>(null);
+    const [filterTag, setFilterTag] = useState<string>("");
+
+    const [sortBy, setSortBy] = useState<"newest" | "oldest" | "highest" | "lowest">("newest");
+    const [searchQuery, setSearchQuery] = useState<string>("");
+
+    const [showModal, setShowModal] = useState(false);
+    const [reviewToDelete, setReviewToDelete] = useState<string | null>(null);
+
+    const preselectedRestaurantId: string | null = location.state?.restaurantId ?? null;
+
+    /** ------------------------ FETCH REVIEW ------------------------ */
+    const fetchReviews = useCallback(async (restaurantId: string | null) => {
+        if (!restaurantId) {
+            setReviews([]);
+            return;
+        }
+
+        const data = await getRestaurantReviews(restaurantId);
+        setReviews(data);
+    }, []);
+
+    /** ------------------------ FETCH INITIAL ------------------------ */
     useEffect(() => {
-        async function fetchData() {
+        async function init() {
             if (!user) return;
             setLoading(true);
 
-            const rest = await getUserRestaurants(user.id);
-            setRestaurants(rest);
+            const userRestaurants = await getUserRestaurants(user.id);
+            setRestaurants(userRestaurants);
 
-            // 1) Se ho un ristorante pre-selezionato (da navigate state), usa quello
-            // 2) Altrimenti, se ho già una selezione precedente, mantienila
-            // 3) Altrimenti usa il primo disponibile
-            const initialId =
-                preselectedRestaurantId ||
-                selectedRestaurant ||
-                (rest.length > 0 ? rest[0].id : null);
+            const first = preselectedRestaurantId ?? userRestaurants[0]?.id ?? null;
+            setSelectedRestaurant(first);
 
-            setSelectedRestaurant(initialId);
-
-            if (initialId) {
-                const data = await getRestaurantReviews(initialId);
-                updateDashboard(data);
-            } else {
-                resetDashboard();
-            }
+            await fetchReviews(first);
 
             setLoading(false);
         }
 
-        fetchData();
-        // dipendenze: se cambia l'utente o arrivi con un nuovo preselect, ricalcola
-    }, [user, preselectedRestaurantId]);
+        void init();
+    }, [user, preselectedRestaurantId, fetchReviews]);
 
-    function resetDashboard() {
-        setSelectedRestaurant(null);
-        setReviews([]);
-        setAverage(0);
-        setChartData([]);
-    }
-
-    // ✅ Carica le recensioni (usata sia manualmente che per filtro automatico)
-    async function refreshReviews(restaurantId?: string | null) {
-        if (!user) return;
-        setLoading(true);
-
-        const data = restaurantId ? await getRestaurantReviews(restaurantId) : [];
-
-        setReviews(data);
-        setLoading(false);
-
-        if (data.length > 0) {
-            const avg = data.reduce((sum, r) => sum + r.rating, 0) / data.length;
-            setAverage(parseFloat(avg.toFixed(1)));
-
-            // raggruppa per data
-            const grouped = data.reduce<Record<string, number[]>>((acc, review) => {
-                const date = new Date(review.created_at).toLocaleDateString("it-IT");
-                if (!acc[date]) acc[date] = [];
-                acc[date].push(review.rating);
-                return acc;
-            }, {});
-
-            const chartPoints = Object.entries(grouped)
-                .map(([date, ratings]) => ({
-                    date,
-                    avg: ratings.reduce((sum, r) => sum + r, 0) / ratings.length
-                }))
-                .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-
-            setChartData(chartPoints);
-        } else {
-            setAverage(null);
-            setChartData([]);
+    /** ------------------------ STATISTICHE ------------------------ */
+    const stats = useMemo(() => {
+        if (!reviews.length) {
+            return {
+                average: null,
+                total: 0
+            };
         }
-    }
 
-    function updateDashboard(data: Review[]) {
-        setReviews(data);
-        if (data.length > 0) {
-            const avg = data.reduce((sum, r) => sum + r.rating, 0) / data.length;
-            setAverage(parseFloat(avg.toFixed(1)));
+        const avg = reviews.reduce((s, r) => s + r.rating, 0) / reviews.length;
+        return {
+            average: Number(avg.toFixed(1)),
+            total: reviews.length
+        };
+    }, [reviews]);
 
-            const grouped = data.reduce<Record<string, number[]>>((acc, r) => {
-                const d = new Date(r.created_at).toLocaleDateString("it-IT");
-                (acc[d] ||= []).push(r.rating);
-                return acc;
-            }, {});
+    /** ------------------------ FILTRI & SEARCH ------------------------ */
+    const filteredAndSortedReviews = useMemo(() => {
+        let result = [...reviews];
 
-            const chartPoints = Object.entries(grouped)
-                .map(([date, ratings]) => ({
-                    date,
-                    avg: ratings.reduce((s, r) => s + r, 0) / ratings.length
-                }))
-                .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-
-            setChartData(chartPoints);
-        } else {
-            setAverage(0);
-            setChartData([]);
+        // voto
+        if (filterRating) {
+            result = result.filter(r => r.rating === filterRating);
         }
-    }
 
+        // periodo
+        const now = Date.now();
+        if (filterPeriod === "7d" || filterPeriod === "30d") {
+            const days = filterPeriod === "7d" ? 7 : 30;
+            const threshold = now - days * 24 * 60 * 60 * 1000;
+            result = result.filter(r => new Date(r.created_at).getTime() >= threshold);
+        } else if (filterPeriod === "custom" && filterDate) {
+            result = result.filter(
+                r => new Date(r.created_at).toLocaleDateString("it-IT") === filterDate
+            );
+        }
+
+        // tag
+        if (filterTag) {
+            result = result.filter(r => (r.tags ?? []).includes(filterTag));
+        }
+
+        // search
+        if (searchQuery.trim()) {
+            const q = searchQuery.toLowerCase();
+            result = result.filter(r => {
+                const comment = r.comment?.toLowerCase() ?? "";
+                const tags = (r.tags ?? []).join(" ").toLowerCase();
+                return comment.includes(q) || tags.includes(q);
+            });
+        }
+
+        // ordinamento
+        result.sort((a, b) => {
+            const dateA = new Date(a.created_at).getTime();
+            const dateB = new Date(b.created_at).getTime();
+
+            switch (sortBy) {
+                case "newest":
+                    return dateB - dateA;
+                case "oldest":
+                    return dateA - dateB;
+                case "highest":
+                    return b.rating - a.rating;
+                case "lowest":
+                    return a.rating - b.rating;
+                default:
+                    return 0;
+            }
+        });
+
+        return result;
+    }, [reviews, filterRating, filterPeriod, filterDate, filterTag, searchQuery, sortBy]);
+
+    /** ------------------------ DELETE ------------------------ */
     async function handleDelete() {
         if (!reviewToDelete) return;
+
         try {
+            // elimina lato Supabase (con controlli)
             await deleteReview(reviewToDelete);
-            await refreshReviews(selectedRestaurant || undefined);
-            setShowModal(false);
-            setReviewToDelete(null);
+
+            // update ottimistico dello state locale
+            setReviews(prev => prev.filter(r => r.id !== reviewToDelete));
+
+            // se vuoi essere ultra-sicuro di allineare tutto con il backend,
+            // puoi comunque fare un refetch (opzionale):
+            // await fetchReviews(selectedRestaurant);
         } catch (err) {
             console.error("Errore eliminazione recensione:", err);
-        }
-    }
-
-    async function handleResponseSubmit(reviewId: string) {
-        const text = responseText[reviewId];
-        if (!text) return;
-        try {
-            setLoadingResponse(reviewId);
-            await updateReviewResponse(reviewId, text);
-            await refreshReviews(selectedRestaurant || undefined);
-            setResponseText(prev => ({ ...prev, [reviewId]: "" }));
-        } catch (err) {
-            console.error("Errore risposta:", err);
         } finally {
-            setLoadingResponse(null);
+            setReviewToDelete(null);
+            setShowModal(false);
         }
     }
 
-    // 🔹 Filtri applicati
-    const filteredReviews = useMemo(
-        () =>
-            reviews.filter(r => {
-                const matchRating = filterRating ? r.rating === filterRating : true;
-                const matchDate = filterDate
-                    ? new Date(r.created_at).toLocaleDateString("it-IT") === filterDate
-                    : true;
-                return matchRating && matchDate;
-            }),
-        [reviews, filterRating, filterDate]
-    );
+    /** ------------------------ REVIEW CARD ------------------------ */
+    const ReviewCard = ({ review, index }: { review: Review; index: number }) => {
+        const [expanded, setExpanded] = useState(false);
 
-    // ✅ Cambio manuale dal menu a tendina
-    async function handleRestaurantChange(e: React.ChangeEvent<HTMLSelectElement>) {
-        const id = e.target.value || null;
-        setSelectedRestaurant(id);
-        await refreshReviews(id);
-    }
+        const MAX_LEN = 220;
+        const comment = review.comment ?? "";
+        const isLong = comment.length > MAX_LEN;
+        const displayed = !expanded && isLong ? comment.slice(0, MAX_LEN) + "…" : comment;
 
+        const tags = review.tags ?? [];
+
+        return (
+            <article className={styles.review} style={{ animationDelay: `${index * 50}ms` }}>
+                <header className={styles.headerRow}>
+                    <div className={styles.ratingBox}>
+                        <Text variant="caption" className={styles.stars}>
+                            {review.rating}
+                        </Text>
+                        <Star fill="currentColor" width={18} className={styles.stars} />
+                    </div>
+
+                    <div
+                        className={`${styles.badge} ${
+                            review.source === "public" ? styles.public : styles.verified
+                        }`}
+                    >
+                        {review.source === "public" ? (
+                            <Globe size={14} />
+                        ) : (
+                            <ShieldCheck size={14} />
+                        )}
+
+                        <Text
+                            variant="caption"
+                            className={`${
+                                review.source === "public" ? styles.public : styles.verified
+                            }`}
+                        >
+                            {review.source === "public" ? " Pubblica " : " Verificata"}-{" "}
+                            {new Date(review.created_at).toLocaleDateString("it-IT")}
+                        </Text>
+                    </div>
+                </header>
+
+                {/* TAG PILLS */}
+                {tags && tags.length > 0 && (
+                    <div className={styles.tagPills}>
+                        {tags.map(tag => (
+                            <div key={tag} className={styles.tagPill}>
+                                {tag}
+                            </div>
+                        ))}
+                    </div>
+                )}
+
+                <div className={styles.commentContainer}>
+                    <div className={styles.commentContent}>
+                        <Text variant="body" className={styles.comment}>
+                            {comment ? (
+                                <Text variant="body">{displayed}</Text>
+                            ) : (
+                                <Text variant="caption" className={styles.noComment}>
+                                    Nessun commento
+                                </Text>
+                            )}
+                        </Text>
+
+                        {isLong && (
+                            <button
+                                type="button"
+                                onClick={() => setExpanded(prev => !prev)}
+                                className={styles.collapseToggle}
+                            >
+                                {expanded ? "Mostra meno" : "Mostra tutto"}
+                            </button>
+                        )}
+                    </div>
+
+                    {/* DELETE BUTTON */}
+                    <button
+                        className={styles.deleteReviewBtn}
+                        onClick={() => {
+                            setShowModal(true);
+                            setReviewToDelete(review.id);
+                        }}
+                    >
+                        <Trash2 />
+                    </button>
+                </div>
+            </article>
+        );
+    };
+
+    /** -------------------------------------------------
+     * RENDER
+     -------------------------------------------------- */
     return (
         <div className={styles.reviews}>
+            {/* HEADER */}
             <header className={styles.header}>
                 <div className={styles.selectRestaurant}>
                     <Text as="label" variant="body">
                         Ristorante:
                     </Text>
-                    <div className={styles.filter}>
-                        <select
-                            id="restaurant-select"
-                            value={selectedRestaurant ?? ""}
-                            onChange={handleRestaurantChange}
-                        >
-                            <option value="">Tutti i locali</option>
-                            {restaurants.map(r => (
-                                <option key={r.id} value={r.id}>
-                                    {r.name}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
+
+                    <select
+                        value={selectedRestaurant ?? ""}
+                        disabled={loading}
+                        onChange={async e => {
+                            const id = e.target.value || null;
+                            setSelectedRestaurant(id);
+                            setLoading(true);
+                            await fetchReviews(id);
+                            setLoading(false);
+                        }}
+                    >
+                        <option value="">Tutti i locali</option>
+                        {restaurants.map(r => (
+                            <option key={r.id} value={r.id}>
+                                {r.name}
+                            </option>
+                        ))}
+                    </select>
                 </div>
 
                 <div className={styles.stats}>
                     <div className={styles.statBox}>
-                        <Text variant="title-sm">⭐ {average}</Text>
+                        <Text variant="title-sm">
+                            {stats.average !== null ? stats.average : "-"}
+                        </Text>
                         <Text variant="caption" colorVariant="muted">
                             Valutazione media
                         </Text>
                     </div>
+
                     <div className={styles.statBox}>
-                        <Text variant="title-sm">{reviews.length}</Text>
+                        <Text variant="title-sm">{stats.total}</Text>
                         <Text variant="caption" colorVariant="muted">
                             Totale recensioni
                         </Text>
@@ -224,70 +313,57 @@ export default function Reviews() {
                 </div>
             </header>
 
-            {loading ? (
-                <Text variant="body" align="center" colorVariant="muted">
-                    Caricamento recensioni...
-                </Text>
-            ) : (
-                <>
-                    {/* Grafico */}
-                    <section className={styles.chart} aria-label="Andamento recensioni">
-                        <Text variant="title-md" align="center">
-                            Andamento delle recensioni
-                        </Text>
-                        {chartData.length === 0 ? (
-                            <Text variant="body" align="center" colorVariant="muted">
-                                Nessun dato disponibile per il grafico.
-                            </Text>
-                        ) : (
-                            <ResponsiveContainer width="100%" height={300}>
-                                <LineChart data={chartData}>
-                                    <CartesianGrid strokeDasharray="3 3" />
-                                    <XAxis dataKey="date" />
-                                    <YAxis domain={[1, 5]} ticks={[1, 2, 3, 4, 5]} />
-                                    <Tooltip
-                                        contentStyle={{
-                                            backgroundColor: "#fff",
-                                            borderRadius: "8px"
-                                        }}
-                                        labelStyle={{ fontWeight: 600 }}
-                                    />
-                                    <Line
-                                        type="monotone"
-                                        dataKey="avg"
-                                        stroke="#2563eb"
-                                        strokeWidth={2}
-                                        dot={{ r: 4 }}
-                                    />
-                                </LineChart>
-                            </ResponsiveContainer>
-                        )}
-                    </section>
+            {/* FILTRI */}
+            <section className={styles.filters}>
+                <div className={styles.filterGroup}>
+                    <Text as="label">Cerca:</Text>
+                    <input
+                        type="search"
+                        placeholder="Cerca per testo o tag…"
+                        value={searchQuery}
+                        onChange={e => setSearchQuery(e.target.value)}
+                        className={styles.searchInput}
+                    />
+                </div>
 
-                    {/* Filtri */}
-                    <section className={styles.filters} aria-label="Filtri recensioni">
-                        <div>
-                            <Text as="label" variant="body" colorVariant="muted">
-                                Filtra per voto:
-                            </Text>
-                            <select
-                                onChange={e =>
-                                    setFilterRating(e.target.value ? Number(e.target.value) : null)
-                                }
-                            >
-                                <option value="">Tutti</option>
-                                {[5, 4, 3, 2, 1].map(r => (
-                                    <option key={r} value={r}>
-                                        {r} ⭐
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
+                <div className={styles.selects}>
+                    <div className={styles.filterGroup}>
+                        <Text as="label">Voto:</Text>
+                        <select
+                            value={filterRating ?? ""}
+                            onChange={e =>
+                                setFilterRating(e.target.value ? Number(e.target.value) : null)
+                            }
+                        >
+                            <option value="">Tutti</option>
+                            {[5, 4, 3, 2, 1].map(r => (
+                                <option key={r} value={r}>
+                                    {r} ★
+                                </option>
+                            ))}
+                        </select>
+                    </div>
 
-                        <div>
-                            <Text as="label" variant="body" colorVariant="muted">
-                                Filtra per data:
-                            </Text>
+                    <div className={styles.filterGroup}>
+                        <Text as="label">Periodo:</Text>
+                        <select
+                            value={filterPeriod}
+                            onChange={e => {
+                                const val = e.target.value as "all" | "7d" | "30d" | "custom";
+                                setFilterPeriod(val);
+                                if (val !== "custom") setFilterDate(null);
+                            }}
+                        >
+                            <option value="all">Tutto</option>
+                            <option value="7d">Ultimi 7 giorni</option>
+                            <option value="30d">Ultimi 30 giorni</option>
+                            <option value="custom">Data specifica</option>
+                        </select>
+                    </div>
+
+                    {filterPeriod === "custom" && (
+                        <div className={styles.filterGroup}>
+                            <Text as="label">Data:</Text>
                             <input
                                 type="date"
                                 onChange={e =>
@@ -299,102 +375,75 @@ export default function Reviews() {
                                 }
                             />
                         </div>
-                    </section>
+                    )}
 
-                    {/* Lista recensioni */}
-                    <section className={styles.list} aria-label="Lista recensioni">
-                        {filteredReviews.map(review => (
-                            <article key={review.id} className={styles.review}>
-                                <div className={styles.headerRow}>
-                                    <Text
-                                        variant="title-sm"
-                                        colorVariant={review.rating >= 4 ? "success" : "error"}
-                                    >
-                                        ⭐ {review.rating}
-                                    </Text>
-                                    <Text variant="caption" colorVariant="muted">
-                                        {new Date(review.created_at).toLocaleDateString("it-IT")}
-                                    </Text>
+                    <div className={styles.filterGroup}>
+                        <Text as="label">Tag:</Text>
+                        <select value={filterTag} onChange={e => setFilterTag(e.target.value)}>
+                            <option value="">Tutti</option>
+                            {TAG_OPTIONS.map(t => (
+                                <option value={t} key={t}>
+                                    {t}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
 
-                                    <Text
-                                        variant="caption"
-                                        className={`${styles.badge} ${
-                                            review.source === "public"
-                                                ? styles.public
-                                                : styles.verified
-                                        }`}
-                                    >
-                                        {review.source === "public" ? "Pubblica" : "Verificata"}
-                                    </Text>
-                                </div>
+                    <div className={styles.filterGroup}>
+                        <Text as="label">Ordina:</Text>
+                        <select
+                            value={sortBy}
+                            onChange={e =>
+                                setSortBy(
+                                    e.target.value as "newest" | "oldest" | "highest" | "lowest"
+                                )
+                            }
+                        >
+                            <option value="newest">Più recenti</option>
+                            <option value="oldest">Più vecchie</option>
+                            <option value="highest">Voto più alto</option>
+                            <option value="lowest">Voto più basso</option>
+                        </select>
+                    </div>
+                </div>
+            </section>
 
-                                <Text variant="body">
-                                    {review.comment || (
-                                        <span className={styles.noComment}>Nessun commento</span>
-                                    )}
-                                </Text>
-
-                                {/* Risposta gestore */}
-                                {review.response ? (
-                                    <div className={styles.responseBox}>
-                                        <Text variant="body">{review.response}</Text>
-                                        <Text variant="caption" colorVariant="muted">
-                                            Risposta del{" "}
-                                            {new Date(
-                                                review.response_date || ""
-                                            ).toLocaleDateString("it-IT")}
-                                        </Text>
-                                    </div>
-                                ) : (
-                                    <form
-                                        className={styles.responseForm}
-                                        onSubmit={e => {
-                                            e.preventDefault();
-                                            handleResponseSubmit(review.id);
-                                        }}
-                                    >
-                                        <textarea
-                                            placeholder="Scrivi una risposta..."
-                                            value={responseText[review.id] || ""}
-                                            onChange={e =>
-                                                setResponseText({
-                                                    ...responseText,
-                                                    [review.id]: e.target.value
-                                                })
-                                            }
-                                        />
-                                        <button
-                                            type="submit"
-                                            disabled={loadingResponse === review.id}
-                                            aria-busy={loadingResponse === review.id}
-                                        >
-                                            {loadingResponse === review.id
-                                                ? "Invio..."
-                                                : "Rispondi"}
-                                        </button>
-
-                                        <button
-                                            className={styles.deleteBtn}
-                                            onClick={() => {
-                                                setShowModal(true);
-                                                setReviewToDelete(review.id);
-                                            }}
-                                        >
-                                            Elimina
-                                        </button>
-                                    </form>
-                                )}
-                            </article>
+            {/* LISTA RECENSIONI / SKELETON */}
+            {loading ? (
+                <section className={styles.list} aria-label="Lista recensioni in caricamento">
+                    <div className={styles.skeletonWrapper}>
+                        {[1, 2, 3].map(i => (
+                            <div key={i} className={styles.reviewSkeleton}>
+                                <div className="skeleton sm" style={{ width: "30%" }} />
+                                <div className="skeleton" />
+                                <div className="skeleton" style={{ width: "80%" }} />
+                            </div>
                         ))}
-                    </section>
-                </>
+                    </div>
+                </section>
+            ) : (
+                <section className={styles.list} aria-label="Lista recensioni">
+                    {filteredAndSortedReviews.length === 0 ? (
+                        <div className={styles.emptyState}>
+                            <Text variant="title-sm">Nessuna recensione trovata</Text>
+                            <Text variant="body" colorVariant="muted">
+                                Prova a cambiare i filtri o la ricerca.
+                            </Text>
+                        </div>
+                    ) : (
+                        filteredAndSortedReviews.map((review, i) => (
+                            <ReviewCard key={review.id} review={review} index={i} />
+                        ))
+                    )}
+                </section>
             )}
 
-            {/* Modale di conferma */}
+            {/* MODALE ELIMINAZIONE */}
             {showModal && (
                 <div className={styles.modalOverlay} role="dialog" aria-modal="true">
                     <div className={styles.modal}>
                         <Text variant="body">Sei sicuro di voler eliminare questa recensione?</Text>
+
                         <div className={styles.modalActions}>
                             <button onClick={handleDelete} className={styles.confirm}>
                                 Elimina

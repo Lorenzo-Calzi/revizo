@@ -17,7 +17,7 @@
   position: sticky;
   top: 0;
   left: 0;
-  z-index: 1000;
+  z-index: 999;
 
   transition: transform 0.35s ease, box-shadow 0.25s ease;
 
@@ -112,6 +112,7 @@ nav {
     &:hover {
       background: var(--hover-bg, #f1f5f9);
       color: var(--brand-primary, #2563eb);
+      text-decoration: none;
     }
 
     &:focus-visible {
@@ -124,7 +125,6 @@ nav {
       background: var(--hover-bg, #f1f5f9);
       color: var(--brand-primary, #2563eb);
       border-left-color: var(--brand-primary, #2563eb);
-      font-weight: 600;
     }
   }
 }

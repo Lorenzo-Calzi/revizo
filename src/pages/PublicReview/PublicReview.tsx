@@ -12,11 +12,26 @@ const publicClient = createClient(
     }
 );
 
+// Stesse categorie della dashboard
+const TAG_OPTIONS = [
+    "Qualità del cibo",
+    "Servizio",
+    "Tempi di attesa",
+    "Prezzo",
+    "Pulizia",
+    "Atmosfera"
+];
+
 export default function PublicReview() {
     const { slug } = useParams();
     const [restaurant, setRestaurant] = useState<{ id: string; name: string } | null>(null);
+
     const [rating, setRating] = useState<number>(0);
     const [comment, setComment] = useState<string>("");
+
+    // 🔥 TAG MULTIPLI
+    const [tags, setTags] = useState<string[]>([]);
+
     const [submitting, setSubmitting] = useState(false);
     const [submitted, setSubmitted] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -37,15 +52,34 @@ export default function PublicReview() {
         fetchRestaurant();
     }, [slug]);
 
+    // 🔥 Toggle tag multipli
+    function toggleTag(tag: string) {
+        setTags(prev => {
+            if (prev.includes(tag)) {
+                return prev.filter(t => t !== tag);
+            }
+            if (prev.length >= 3) return prev; // massimo 3 tag (opzionale)
+            return [...prev, tag];
+        });
+    }
+
     // 🔹 Invia recensione a Supabase
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
         if (!restaurant) return;
 
         setSubmitting(true);
-        const { error } = await publicClient
-            .from("reviews")
-            .insert([{ restaurant_id: restaurant.id, rating, comment, source: "public" }]);
+
+        const { error } = await publicClient.from("reviews").insert([
+            {
+                restaurant_id: restaurant.id,
+                rating,
+                comment,
+                tags, // 🔥 aggiunto
+                source: "public"
+            }
+        ]);
+
         setSubmitting(false);
 
         if (error) {
@@ -93,6 +127,7 @@ export default function PublicReview() {
             <p className={styles.subtitle}>Lascia la tua recensione</p>
 
             <form onSubmit={handleSubmit} className={styles.form}>
+                {/* Voto */}
                 <div className={styles.ratingGroup}>
                     {[1, 2, 3, 4, 5].map(star => (
                         <span
@@ -107,6 +142,26 @@ export default function PublicReview() {
                     ))}
                 </div>
 
+                {/* 🔥 TAG MULTIPLI */}
+                <div className={styles.tags}>
+                    <label>Seleziona fino a 3 categorie:</label>
+                    <div className={styles.tagList}>
+                        {TAG_OPTIONS.map(tag => (
+                            <button
+                                type="button"
+                                key={tag}
+                                className={`${styles.tag} ${
+                                    tags.includes(tag) ? styles.tagActive : ""
+                                }`}
+                                onClick={() => toggleTag(tag)}
+                            >
+                                {tag}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Commento */}
                 <textarea
                     placeholder="Lascia un commento (facoltativo)..."
                     value={comment}
@@ -114,7 +169,12 @@ export default function PublicReview() {
                     rows={4}
                 />
 
-                <button type="submit" disabled={rating === 0 || submitting}>
+                {/* Submit */}
+                <button
+                    type="submit"
+                    className={styles.submit}
+                    disabled={rating === 0 || submitting}
+                >
                     {submitting ? "Invio in corso..." : "Invia recensione"}
                 </button>
             </form>

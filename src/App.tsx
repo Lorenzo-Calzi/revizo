@@ -4,6 +4,7 @@ import { ProtectedRoute } from "@components/ProtectedRoute";
 
 // Login pages
 import Login from "./pages/Auth/Login";
+import VerifyOtp from "./pages/Auth/VerifyOtp";
 import SignUp from "./pages/Auth/SignUp";
 import ResetPassword from "./pages/Auth/ResetPassword";
 import UpdatePassword from "./pages/Auth/UpdatePassword";
@@ -25,6 +26,7 @@ export default function App() {
         <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/verify-otp" element={<VerifyOtp />} />
             <Route path="/signup" element={<SignUp />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/update-password" element={<UpdatePassword />} />

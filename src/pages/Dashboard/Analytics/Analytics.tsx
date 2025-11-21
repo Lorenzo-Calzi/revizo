@@ -10,81 +10,244 @@ import {
     Bar,
     XAxis,
     YAxis,
-    CartesianGrid
+    CartesianGrid,
+    LineChart,
+    Line
 } from "recharts";
 import { getAnalyticsReviews } from "@services/supabase/reviews";
+import { getAnalyticsQrScans } from "@services/supabase/qrScans";
 import { useAuth } from "@context/useAuth";
 import Text from "@components/ui/Text/Text";
 import Skeleton from "@components/ui/Skeleton/Skeleton";
 import type { AnalyticsReview } from "@services/supabase/reviews";
+import { getUserRestaurants } from "@services/supabase/restaurants";
+import { Star } from "lucide-react";
 import styles from "./Analytics.module.scss";
 
 type Range = 7 | 30 | 90;
+
 const COLORS = ["#ef4444", "#f97316", "#facc15", "#22c55e", "#3b82f6"];
+
+// Estendiamo il tipo per supportare più ristoranti senza rompere nulla
+type ExtendedAnalyticsReview = AnalyticsReview & {
+    restaurant_id?: string | null;
+    restaurant_name?: string | null;
+};
+
+type AnalyticsQrScan = {
+    id: string;
+    restaurant_id?: string | null;
+    created_at: string;
+};
+
+type RestaurantOption = {
+    id: string;
+    name: string;
+};
 
 export default function Analytics() {
     const { user } = useAuth();
-    const [reviews, setReviews] = useState<AnalyticsReview[]>([]);
-    const [range, setRange] = useState<Range>(30);
-    const [isLoading, setIsLoading] = useState(true);
 
+    const [reviews, setReviews] = useState<ExtendedAnalyticsReview[]>([]);
+    const [qrScans, setQrScans] = useState<AnalyticsQrScan[]>([]);
+    const [range, setRange] = useState<Range>(30);
+    const [selectedRestaurantId, setSelectedRestaurantId] = useState<string | "all">("all");
+    const [restaurants, setRestaurants] = useState<RestaurantOption[]>([]);
+
+    const [isLoadingReviews, setIsLoadingReviews] = useState(true);
+    const [isLoadingScans, setIsLoadingScans] = useState(true);
+
+    const isLoading = isLoadingReviews || isLoadingScans;
+
+    // 🔹 Caricamento dati reviews + scans
     useEffect(() => {
-        if (!user?.id) return;
-        setIsLoading(true);
-        getAnalyticsReviews().then(data => {
-            setReviews(data);
-            setIsLoading(false);
-        });
+        async function init() {
+            if (!user?.id) return;
+
+            setIsLoadingReviews(true);
+            setIsLoadingScans(true);
+
+            // 1. Carico i ristoranti
+            const userRestaurants = await getUserRestaurants(user.id);
+            setRestaurants(userRestaurants);
+
+            // 2. Imposto default ristorante
+            const defaultId = userRestaurants[0]?.id ?? "all";
+            setSelectedRestaurantId(defaultId);
+
+            // 3. Carico reviews
+            const revs = await getAnalyticsReviews();
+            setReviews(revs);
+
+            // 4. Carico scansioni QR
+            const scans = await getAnalyticsQrScans();
+            setQrScans(scans);
+
+            setIsLoadingReviews(false);
+            setIsLoadingScans(false);
+        }
+
+        void init();
     }, [user?.id]);
 
-    // Filtra per periodo
-    const filtered = useMemo(() => {
-        const cutoff = new Date();
-        cutoff.setDate(cutoff.getDate() - range);
-        return reviews.filter(r => new Date(r.created_at) >= cutoff);
-    }, [reviews, range]);
+    // 🔹 Opzioni ristoranti derivate dai dati (non serve chiamata extra)
+    const restaurantOptions = useMemo<RestaurantOption[]>(() => {
+        const map = new Map<string, RestaurantOption>();
 
-    const total = filtered.length;
-    const avgRating = filtered.length
-        ? filtered.reduce((sum, r) => sum + r.rating, 0) / filtered.length
+        reviews.forEach(r => {
+            const id = r.restaurant_id;
+            if (!id) return;
+
+            if (!map.has(id)) {
+                map.set(id, {
+                    id,
+                    name: r.restaurant_name || "Ristorante senza nome"
+                });
+            }
+        });
+
+        return Array.from(map.values());
+    }, [reviews]);
+
+    // Se non ho ancora una scelta e ci sono ristoranti, imposto il primo
+    useEffect(() => {
+        if (selectedRestaurantId === "all" && restaurantOptions.length === 1) {
+            setSelectedRestaurantId(restaurantOptions[0].id);
+        }
+    }, [restaurantOptions, selectedRestaurantId]);
+
+    // 🔹 Cutoff temporale
+    const cutoff = useMemo(() => {
+        const d = new Date();
+        d.setDate(d.getDate() - range);
+        return d;
+    }, [range]);
+
+    // 🔹 Filtri applicati
+    const filteredReviews = useMemo(() => {
+        return reviews.filter(r => {
+            const created = new Date(r.created_at);
+            if (created < cutoff) return false;
+
+            if (selectedRestaurantId !== "all") {
+                return r.restaurant_id === selectedRestaurantId;
+            }
+
+            return selectedRestaurantId === "all" || !r.restaurant_id;
+        });
+    }, [reviews, cutoff, selectedRestaurantId]);
+
+    const filteredScans = useMemo(() => {
+        return qrScans.filter(s => {
+            const created = new Date(s.created_at);
+            if (created < cutoff) return false;
+
+            if (selectedRestaurantId !== "all" && s.restaurant_id) {
+                return s.restaurant_id === selectedRestaurantId;
+            }
+
+            return selectedRestaurantId === "all" || !s.restaurant_id;
+        });
+    }, [qrScans, cutoff, selectedRestaurantId]);
+
+    // 🔹 KPI recensioni
+    const totalReviews = filteredReviews.length;
+    const avgRating = totalReviews
+        ? filteredReviews.reduce((sum, r) => sum + r.rating, 0) / totalReviews
         : 0;
-    const positive = filtered.filter(r => r.rating >= 4).length;
-    const negative = filtered.filter(r => r.rating <= 3).length;
 
+    const positiveReviews = filteredReviews.filter(r => r.rating >= 4).length;
+    const negativeReviews = filteredReviews.filter(r => r.rating <= 3).length;
+
+    const positiveRatio = totalReviews ? (positiveReviews / totalReviews) * 100 : 0;
+
+    // 🔹 KPI scansioni
+    const totalQrScans = filteredScans.length;
+
+    // 🔹 Distribuzione punteggio
     const ratingDist = [1, 2, 3, 4, 5].map(stars => ({
-        name: `${stars} ⭐`,
-        value: filtered.filter(r => r.rating === stars).length
+        name: `${stars} ★`,
+        value: filteredReviews.filter(r => r.rating === stars).length
     }));
 
-    const sourceDist = ["google", "internal"].map(src => ({
+    // 🔹 Distribuzione fonte
+    const sourceDist = ["google", "public"].map(src => ({
         name: src === "google" ? "Google" : "Interna",
-        value: filtered.filter(r => r.source === src).length
+        value: filteredReviews.filter(r => r.source === src).length
     }));
 
-    const barData = useMemo(() => {
+    // 🔹 Andamento recensioni per giorno
+    const reviewsTrend = useMemo(() => {
         const map = new Map<string, number>();
-        filtered.forEach(r => {
-            const date = new Date(r.created_at).toLocaleDateString("it-IT");
+
+        filteredReviews.forEach(r => {
+            const date = new Date(r.created_at).toLocaleDateString("it-IT", {
+                day: "2-digit",
+                month: "2-digit"
+            });
             map.set(date, (map.get(date) || 0) + 1);
         });
-        return Array.from(map.entries()).map(([date, count]) => ({
-            name: date,
-            recensioni: count
-        }));
-    }, [filtered]);
 
-    // 🔹 Stato caricamento — skeleton realistici
+        return Array.from(map.entries())
+            .sort(([a], [b]) => {
+                const [da, ma] = a.split("/");
+                const [db, mb] = b.split("/");
+                const dateA = new Date(new Date().getFullYear(), Number(ma) - 1, Number(da));
+                const dateB = new Date(new Date().getFullYear(), Number(mb) - 1, Number(db));
+                return dateA.getTime() - dateB.getTime();
+            })
+            .map(([date, count]) => ({
+                name: date,
+                recensioni: count
+            }));
+    }, [filteredReviews]);
+
+    // 🔹 Andamento scansioni QR per giorno
+    const qrScansTrend = useMemo(() => {
+        const map = new Map<string, number>();
+
+        filteredScans.forEach(s => {
+            const date = new Date(s.created_at).toLocaleDateString("it-IT", {
+                day: "2-digit",
+                month: "2-digit"
+            });
+            map.set(date, (map.get(date) || 0) + 1);
+        });
+
+        return Array.from(map.entries())
+            .sort(([a], [b]) => {
+                const [da, ma] = a.split("/");
+                const [db, mb] = b.split("/");
+                const dateA = new Date(new Date().getFullYear(), Number(ma) - 1, Number(da));
+                const dateB = new Date(new Date().getFullYear(), Number(mb) - 1, Number(db));
+                return dateA.getTime() - dateB.getTime();
+            })
+            .map(([date, count]) => ({
+                name: date,
+                scansioni: count
+            }));
+    }, [filteredScans]);
+
+    // 🔹 Skeleton realistici con nuovo layout
     if (isLoading) {
         return (
             <div className={styles.analytics} aria-busy="true" aria-live="polite">
+                <div className={styles.header}>
+                    <div className={styles.filtersRow}>
+                        <Skeleton height="40px" radius="999px" />
+                        <Skeleton height="40px" radius="999px" />
+                    </div>
+                </div>
+
                 <div className={styles.kpiGrid} aria-busy="true" aria-live="polite">
-                    {[...Array(4)].map((_, i) => (
+                    {[...Array(5)].map((_, i) => (
                         <Skeleton key={i} height="90px" radius="12px" />
                     ))}
                 </div>
+
                 <div className={styles.chartsGrid}>
-                    {[...Array(3)].map((_, i) => (
-                        <Skeleton key={i} height="280px" radius="12px" />
+                    {[...Array(4)].map((_, i) => (
+                        <Skeleton key={i} height="340px" radius="16px" />
                     ))}
                 </div>
             </div>
@@ -92,48 +255,90 @@ export default function Analytics() {
     }
 
     return (
-        <main className={styles.analytics} aria-label="Sezione analytics recensioni">
+        <main className={styles.analytics} aria-label="Sezione analytics recensioni e scansioni QR">
             <header className={styles.header}>
-                <div className={styles.rangeSelector}>
-                    {[7, 30, 90].map(days => (
-                        <button
-                            key={days}
-                            className={`${styles.rangeBtn} ${range === days ? styles.active : ""}`}
-                            onClick={() => setRange(days as Range)}
-                            aria-pressed={range === days}
-                        >
-                            <Text
-                                as="span"
-                                variant="caption"
-                                colorVariant={range === days ? "white" : "default"}
-                            >
-                                Ultimi {days} giorni
+                <div className={styles.filtersRow}>
+                    <div className={styles.restaurantSelector}>
+                        <label htmlFor="restaurant-select" className={styles.restaurantLabel}>
+                            <Text variant="caption" colorVariant="muted">
+                                Ristorante
                             </Text>
-                        </button>
-                    ))}
+                        </label>
+
+                        <select
+                            id="restaurant-select"
+                            className={styles.restaurantSelect}
+                            value={selectedRestaurantId}
+                            onChange={e => setSelectedRestaurantId(e.target.value)}
+                        >
+                            <option value="all">Tutti i locali</option>
+
+                            {restaurants.map(r => (
+                                <option key={r.id} value={r.id}>
+                                    {r.name}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div className={styles.rangeSelector}>
+                        {[7, 30, 90].map(days => (
+                            <button
+                                key={days}
+                                className={`${styles.rangeBtn} ${
+                                    range === days ? styles.active : ""
+                                }`}
+                                onClick={() => setRange(days as Range)}
+                                aria-pressed={range === days}
+                                type="button"
+                            >
+                                <Text
+                                    as="span"
+                                    variant="caption"
+                                    colorVariant={range === days ? "white" : "default"}
+                                >
+                                    Ultimi {days} giorni
+                                </Text>
+                            </button>
+                        ))}
+                    </div>
                 </div>
             </header>
 
             {/* KPI */}
             <section className={styles.kpiGrid} role="group" aria-label="Statistiche principali">
-                <KPI label="Recensioni totali" value={total.toString()} />
+                <KPI label="Recensioni totali" value={totalReviews.toString()} />
                 <KPI label="Valutazione media" value={avgRating.toFixed(1)} highlight />
-                <KPI label="Positive" value={positive.toString()} color="success" />
-                <KPI label="Negative" value={negative.toString()} color="error" />
+                <KPI
+                    label="Recensioni positive"
+                    value={`${positiveReviews} (${positiveRatio.toFixed(0)}%)`}
+                    color="success"
+                />
+                <KPI label="Recensioni negative" value={negativeReviews.toString()} color="error" />
+                <KPI
+                    label="Scansioni QR"
+                    value={totalQrScans.toString()}
+                    // badge={
+                    //     selectedRestaurantId === "all" ? "Somma totale" : "Ristorante selezionato"
+                    // }
+                />
             </section>
 
             {/* GRAFICI */}
             <section className={styles.chartsGrid} aria-label="Grafici di distribuzione e trend">
                 <ChartCard title="Distribuzione per punteggio">
-                    <ResponsiveContainer width="100%" height={260}>
+                    <ResponsiveContainer width="100%" height={320}>
                         <PieChart>
                             <Pie
                                 data={ratingDist}
                                 dataKey="value"
                                 nameKey="name"
-                                innerRadius={60}
-                                outerRadius={90}
-                                label
+                                innerRadius={70}
+                                outerRadius={110}
+                                label={({ name, percent }) =>
+                                    `${name} (${(percent * 100).toFixed(0)}%)`
+                                }
+                                paddingAngle={2}
                             >
                                 {ratingDist.map((_, i) => (
                                     <Cell key={i} fill={COLORS[i]} />
@@ -146,14 +351,17 @@ export default function Analytics() {
                 </ChartCard>
 
                 <ChartCard title="Distribuzione per fonte">
-                    <ResponsiveContainer width="100%" height={260}>
+                    <ResponsiveContainer width="100%" height={320}>
                         <PieChart>
                             <Pie
                                 data={sourceDist}
                                 dataKey="value"
                                 nameKey="name"
-                                outerRadius={90}
-                                label
+                                outerRadius={110}
+                                label={({ name, percent }) =>
+                                    `${name} (${(percent * 100 || 0).toFixed(0)}%)`
+                                }
+                                paddingAngle={4}
                             >
                                 <Cell fill="#2563eb" />
                                 <Cell fill="#10b981" />
@@ -164,14 +372,38 @@ export default function Analytics() {
                     </ResponsiveContainer>
                 </ChartCard>
 
-                <ChartCard title="Andamento recensioni nel periodo">
-                    <ResponsiveContainer width="100%" height={280}>
-                        <BarChart data={barData}>
+                <ChartCard title="Andamento recensioni nel periodo" wide>
+                    <ResponsiveContainer width="100%" height={360}>
+                        <LineChart data={reviewsTrend}>
                             <CartesianGrid strokeDasharray="3 3" />
                             <XAxis dataKey="name" />
-                            <YAxis />
+                            <YAxis allowDecimals={false} />
                             <Tooltip />
-                            <Bar dataKey="recensioni" fill="#3b82f6" radius={[6, 6, 0, 0]} />
+                            <Line
+                                type="monotone"
+                                dataKey="recensioni"
+                                stroke="#3b82f6"
+                                strokeWidth={2}
+                                dot={{ r: 3 }}
+                                activeDot={{ r: 5 }}
+                            />
+                        </LineChart>
+                    </ResponsiveContainer>
+                </ChartCard>
+
+                <ChartCard title="Andamento scansioni QR nel periodo" wide>
+                    <ResponsiveContainer width="100%" height={360}>
+                        <BarChart data={qrScansTrend}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="name" />
+                            <YAxis allowDecimals={false} />
+                            <Tooltip />
+                            <Bar
+                                dataKey="scansioni"
+                                fill="#22c55e"
+                                radius={[6, 6, 0, 0]}
+                                maxBarSize={40}
+                            />
                         </BarChart>
                     </ResponsiveContainer>
                 </ChartCard>
@@ -185,19 +417,31 @@ function KPI({
     label,
     value,
     color,
-    highlight = false
+    highlight = false,
+    badge
 }: {
     label: string;
     value: string;
     color?: "success" | "error";
     highlight?: boolean;
+    badge?: string;
 }) {
     const colorClass = color === "success" ? styles.success : color === "error" ? styles.error : "";
+
     return (
         <div className={`${styles.kpiCard} ${colorClass}`} role="group">
-            <Text variant="caption" colorVariant="muted">
-                {label}
-            </Text>
+            <div className={styles.kpiHeader}>
+                <Text variant="caption" colorVariant="muted">
+                    {label}
+                </Text>
+                {badge && (
+                    <span className={styles.kpiBadge}>
+                        <Text as="span" variant="caption" colorVariant="muted">
+                            {badge}
+                        </Text>
+                    </span>
+                )}
+            </div>
             <Text
                 variant={highlight ? "title-lg" : "title-md"}
                 weight={600}
@@ -211,13 +455,26 @@ function KPI({
     );
 }
 
-function ChartCard({ title, children }: { title: string; children: React.ReactNode }) {
+function ChartCard({
+    title,
+    children,
+    wide
+}: {
+    title: string;
+    children: React.ReactNode;
+    wide?: boolean;
+}) {
     return (
-        <div className={styles.chartCard}>
-            <Text variant="title-sm" align="center">
-                {title}
-            </Text>
-            {children}
-        </div>
+        <article
+            className={`${styles.chartCard} ${wide ? styles.chartCardWide : ""}`}
+            aria-label={title}
+        >
+            <header className={styles.chartCardHeader}>
+                <Text variant="title-sm" align="left">
+                    {title}
+                </Text>
+            </header>
+            <div className={styles.chartCardBody}>{children}</div>
+        </article>
     );
 }

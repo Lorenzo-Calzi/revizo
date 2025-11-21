@@ -63,9 +63,19 @@ export async function addReview(userId: string, rating: number, comment: string)
 }
 
 export async function deleteReview(reviewId: string) {
-    const { error } = await supabase.from("reviews").delete().eq("id", reviewId);
+    const { data, error } = await supabase.from("reviews").delete().eq("id", reviewId).select("id");
 
-    if (error) throw error;
+    if (error) {
+        console.error("Errore Supabase deleteReview:", error);
+        throw error;
+    }
+
+    if (!data || data.length === 0) {
+        // utile per capire se l'id non matcha nessuna riga
+        throw new Error("Nessuna recensione trovata da eliminare.");
+    }
+
+    return data[0]; // opzionale, ma comodo se vuoi usarlo
 }
 
 export async function updateReviewResponse(reviewId: string, response: string) {
@@ -78,20 +88,33 @@ export async function updateReviewResponse(reviewId: string, response: string) {
 }
 
 /** Ottiene tutte le recensioni per un ristorante o globali */
-export async function getAnalyticsReviews(restaurantId?: string): Promise<AnalyticsReview[]> {
-    let query = supabase
+export async function getAnalyticsReviews() {
+    const { data, error } = await supabase
         .from("reviews")
-        .select("id,rating,source,created_at")
-        .order("created_at", { ascending: true });
-
-    if (restaurantId) query = query.eq("restaurant_id", restaurantId);
-
-    const { data, error } = await query;
+        .select(
+            `
+            id,
+            rating,
+            created_at,
+            source,
+            restaurant_id,
+            restaurants:restaurant_id (
+                name,
+                user_id
+            )
+        `
+        )
+        .order("created_at", { ascending: false });
 
     if (error) {
-        console.error("Errore caricamento analytics:", error.message);
+        console.error("Errore caricamento analytics reviews:", error);
         return [];
     }
 
-    return (data ?? []) as AnalyticsReview[];
+    // Normalizzazione
+    return data.map(r => ({
+        ...r,
+        restaurant_name: r.restaurants?.name ?? null,
+        restaurant_owner_id: r.restaurants?.user_id ?? null
+    }));
 }

@@ -1,6 +1,10 @@
 @use "sass:color";
 @use "@styles/variables" as *;
 
+/* ------------------------------------------------------
+   WRAPPER
+------------------------------------------------------ */
+
 .container {
   max-width: 500px;
   margin: 0 auto;
@@ -10,6 +14,7 @@
   border-radius: 16px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   margin-top: 5vh;
+  animation: fadeIn 0.2s ease;
 
   h1 {
     font-size: 1.6rem;
@@ -24,10 +29,14 @@
   }
 }
 
+/* ------------------------------------------------------
+   FORM
+------------------------------------------------------ */
+
 .form {
   display: flex;
   flex-direction: column;
-  gap: 1.2rem;
+  gap: 1.4rem;
 
   textarea {
     border: 1px solid $gray-300;
@@ -36,6 +45,7 @@
     resize: none;
     font-size: 0.9rem;
     line-height: 1.4;
+    min-height: 120px;
     transition: border-color 0.2s;
 
     &:focus {
@@ -44,14 +54,14 @@
     }
   }
 
-  button {
+  .submit {
     background: $brand-primary;
     color: #fff;
     border: none;
-    border-radius: 8px;
-    padding: 0.8rem 1rem;
+    border-radius: 10px;
+    padding: 0.9rem 1rem;
     font-weight: 600;
-    font-size: 0.95rem;
+    font-size: 1rem;
     cursor: pointer;
     transition: background 0.2s ease;
 
@@ -66,6 +76,10 @@
   }
 }
 
+/* ------------------------------------------------------
+   RATING
+------------------------------------------------------ */
+
 .ratingGroup {
   display: flex;
   justify-content: center;
@@ -79,7 +93,7 @@
     transition: color 0.2s ease, transform 0.1s ease;
 
     &:hover {
-      transform: scale(1.1);
+      transform: scale(1.15);
     }
 
     &.active {
@@ -87,6 +101,56 @@
     }
   }
 }
+
+/* ------------------------------------------------------
+   TAG MULTI-SELECTION
+------------------------------------------------------ */
+
+.tags {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+
+  label {
+    font-size: 0.95rem;
+    color: $gray-700;
+    text-align: left;
+    font-weight: 500;
+  }
+}
+
+.tagList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: flex-start;
+}
+
+.tag {
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid $gray-300;
+  background: #f8fafc;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: all 0.15s ease-out;
+
+  &:hover {
+    border-color: $brand-primary;
+  }
+}
+
+.tagActive {
+  background: #dbeafe;
+  border-color: #2563eb;
+  color: #1e40af;
+  font-weight: 600;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+}
+
+/* ------------------------------------------------------
+   FEEDBACK
+------------------------------------------------------ */
 
 .error {
   color: $error;
@@ -96,4 +160,19 @@
 .loading {
   color: $gray-600;
   font-style: italic;
+}
+
+/* ------------------------------------------------------
+   ANIMAZIONE
+------------------------------------------------------ */
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
