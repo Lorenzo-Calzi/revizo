@@ -24,7 +24,7 @@ const TAG_OPTIONS = [
 
 export default function PublicReview() {
     const { slug } = useParams();
-    const [restaurant, setRestaurant] = useState<{ id: string; name: string } | null>(null);
+    const [restaurant, setBusiness] = useState<{ id: string; name: string } | null>(null);
 
     const [rating, setRating] = useState<number>(0);
     const [comment, setComment] = useState<string>("");
@@ -38,18 +38,18 @@ export default function PublicReview() {
 
     // 🔹 Recupera ristorante dal DB
     useEffect(() => {
-        async function fetchRestaurant() {
+        async function fetchBusiness() {
             const { data, error } = await publicClient
-                .from("restaurants")
+                .from("businesses")
                 .select("id, name")
                 .eq("slug", slug)
                 .single();
 
-            if (error || !data) setError("Ristorante non trovato");
-            else setRestaurant(data);
+            if (error || !data) setError("Business non trovato");
+            else setBusiness(data);
         }
 
-        fetchRestaurant();
+        fetchBusiness();
     }, [slug]);
 
     // 🔥 Toggle tag multipli
@@ -72,7 +72,7 @@ export default function PublicReview() {
 
         const { error } = await publicClient.from("reviews").insert([
             {
-                restaurant_id: restaurant.id,
+                business_id: restaurant.id,
                 rating,
                 comment,
                 tags, // 🔥 aggiunto

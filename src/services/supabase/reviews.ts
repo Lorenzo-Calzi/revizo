@@ -5,21 +5,21 @@ export type AnalyticsReview = Pick<Review, "id" | "rating" | "source" | "created
 
 export async function getUserReviews(userId: string): Promise<Review[]> {
     // 1) prendo gli id dei locali dell'utente
-    const { data: restaurants, error: restError } = await supabase
-        .from("restaurants")
+    const { data: businesses, error: restError } = await supabase
+        .from("businesses")
         .select("id")
         .eq("user_id", userId);
 
     if (restError) throw restError;
-    if (!restaurants || restaurants.length === 0) return [];
+    if (!businesses || businesses.length === 0) return [];
 
-    const restaurantIds = restaurants.map(r => r.id);
+    const restaurantIds = businesses.map(r => r.id);
 
     // 2) prendo le recensioni di quei locali
     const { data: reviews, error: revError } = await supabase
         .from("reviews")
         .select("*")
-        .in("restaurant_id", restaurantIds)
+        .in("business_id", restaurantIds)
         .order("created_at", { ascending: false });
 
     if (revError) throw revError;
@@ -29,18 +29,18 @@ export async function getUserReviews(userId: string): Promise<Review[]> {
 export async function getReviewsByUser(userId: string) {
     const { data, error } = await supabase
         .from("reviews")
-        .select("*, restaurants!inner(user_id)")
-        .eq("restaurants.user_id", userId);
+        .select("*, businesses!inner(user_id)")
+        .eq("businesses.user_id", userId);
     if (error) throw error;
     return data;
 }
 
 /** Se in futuro vuoi filtrare per singolo locale */
-export async function getRestaurantReviews(restaurantId: string): Promise<Review[]> {
+export async function getBusinessReviews(restaurantId: string): Promise<Review[]> {
     const { data, error } = await supabase
         .from("reviews")
         .select("*")
-        .eq("restaurant_id", restaurantId)
+        .eq("business_id", restaurantId)
         .order("created_at", { ascending: false });
 
     if (error) throw error;
@@ -97,8 +97,8 @@ export async function getAnalyticsReviews() {
             rating,
             created_at,
             source,
-            restaurant_id,
-            restaurants:restaurant_id (
+            business_id,
+            businesses:business_id (
                 name,
                 user_id
             )
@@ -114,7 +114,7 @@ export async function getAnalyticsReviews() {
     // Normalizzazione
     return data.map(r => ({
         ...r,
-        restaurant_name: r.restaurants?.name ?? null,
-        restaurant_owner_id: r.restaurants?.user_id ?? null
+        restaurant_name: r.businesses?.name ?? null,
+        restaurant_owner_id: r.businesses?.user_id ?? null
     }));
 }

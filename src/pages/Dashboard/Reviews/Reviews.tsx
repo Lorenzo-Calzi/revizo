@@ -1,9 +1,9 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "@context/useAuth";
-import { getUserRestaurants } from "@services/supabase/restaurants";
-import { getRestaurantReviews, deleteReview } from "@services/supabase/reviews";
-import type { Review, Restaurant } from "@/types/database";
+import { getUserBusinesses } from "@services/supabase/businesses";
+import { getBusinessReviews, deleteReview } from "@services/supabase/reviews";
+import type { Review, Business } from "@/types/database";
 import Text from "@components/ui/Text/Text";
 import { Globe, ShieldCheck, Trash2, Star } from "lucide-react";
 
@@ -23,9 +23,9 @@ export default function Reviews() {
     const location = useLocation();
 
     /** ------------------------ STATE ------------------------ */
-    const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
+    const [businesses, setBusinesses] = useState<Business[]>([]);
     const [reviews, setReviews] = useState<Review[]>([]);
-    const [selectedRestaurant, setSelectedRestaurant] = useState<string | null>(null);
+    const [selectedBusiness, setSelectedBusiness] = useState<string | null>(null);
 
     const [loading, setLoading] = useState(false);
 
@@ -40,7 +40,7 @@ export default function Reviews() {
     const [showModal, setShowModal] = useState(false);
     const [reviewToDelete, setReviewToDelete] = useState<string | null>(null);
 
-    const preselectedRestaurantId: string | null = location.state?.restaurantId ?? null;
+    const preselectedBusinessId: string | null = location.state?.restaurantId ?? null;
 
     /** ------------------------ FETCH REVIEW ------------------------ */
     const fetchReviews = useCallback(async (restaurantId: string | null) => {
@@ -49,7 +49,7 @@ export default function Reviews() {
             return;
         }
 
-        const data = await getRestaurantReviews(restaurantId);
+        const data = await getBusinessReviews(restaurantId);
         setReviews(data);
     }, []);
 
@@ -59,11 +59,11 @@ export default function Reviews() {
             if (!user) return;
             setLoading(true);
 
-            const userRestaurants = await getUserRestaurants(user.id);
-            setRestaurants(userRestaurants);
+            const userBusinesses = await getUserBusinesses(user.id);
+            setBusinesses(userBusinesses);
 
-            const first = preselectedRestaurantId ?? userRestaurants[0]?.id ?? null;
-            setSelectedRestaurant(first);
+            const first = preselectedBusinessId ?? userBusinesses[0]?.id ?? null;
+            setSelectedBusiness(first);
 
             await fetchReviews(first);
 
@@ -71,7 +71,7 @@ export default function Reviews() {
         }
 
         void init();
-    }, [user, preselectedRestaurantId, fetchReviews]);
+    }, [user, preselectedBusinessId, fetchReviews]);
 
     /** ------------------------ STATISTICHE ------------------------ */
     const stats = useMemo(() => {
@@ -160,7 +160,7 @@ export default function Reviews() {
 
             // se vuoi essere ultra-sicuro di allineare tutto con il backend,
             // puoi comunque fare un refetch (opzionale):
-            // await fetchReviews(selectedRestaurant);
+            // await fetchReviews(selectedBusiness);
         } catch (err) {
             console.error("Errore eliminazione recensione:", err);
         } finally {
@@ -269,24 +269,24 @@ export default function Reviews() {
         <div className={styles.reviews}>
             {/* HEADER */}
             <header className={styles.header}>
-                <div className={styles.selectRestaurant}>
+                <div className={styles.selectBusiness}>
                     <Text as="label" variant="body">
-                        Ristorante:
+                        Attività:
                     </Text>
 
                     <select
-                        value={selectedRestaurant ?? ""}
+                        value={selectedBusiness ?? ""}
                         disabled={loading}
                         onChange={async e => {
                             const id = e.target.value || null;
-                            setSelectedRestaurant(id);
+                            setSelectedBusiness(id);
                             setLoading(true);
                             await fetchReviews(id);
                             setLoading(false);
                         }}
                     >
                         <option value="">Tutti i locali</option>
-                        {restaurants.map(r => (
+                        {businesses.map(r => (
                             <option key={r.id} value={r.id}>
                                 {r.name}
                             </option>

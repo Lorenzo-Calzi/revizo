@@ -1,8 +1,8 @@
 import { useEffect, useState, memo } from "react";
 import { useAuth } from "@context/useAuth";
-import { getUserRestaurants } from "@services/supabase/restaurants";
+import { getUserBusinesses } from "@services/supabase/businesses";
 import { supabase } from "@services/supabase/client";
-import type { Review, Restaurant } from "@/types/database";
+import type { Review, Business } from "@/types/database";
 import Text from "@components/ui/Text/Text";
 import Skeleton from "@components/ui/Skeleton/Skeleton";
 import { useNavigate } from "react-router-dom";
@@ -12,7 +12,7 @@ export default function Overview() {
     const { user } = useAuth();
     const navigate = useNavigate();
 
-    const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
+    const [businesses, setBusinesses] = useState<Business[]>([]);
     const [reviews, setReviews] = useState<Review[]>([]);
     const [average, setAverage] = useState<number | null>(null);
     const [loading, setLoading] = useState(true);
@@ -28,11 +28,11 @@ export default function Overview() {
         setError(null);
 
         try {
-            const rest = await getUserRestaurants(user!.id);
-            setRestaurants(rest);
+            const rest = await getUserBusinesses(user!.id);
+            setBusinesses(rest);
 
             const results = await Promise.all(
-                rest.map(r => supabase.from("reviews").select("*").eq("restaurant_id", r.id))
+                rest.map(r => supabase.from("reviews").select("*").eq("business_id", r.id))
             );
 
             const allReviews: Review[] = results
@@ -102,7 +102,7 @@ export default function Overview() {
             <section className={styles.kpiGrid} aria-label="Statistiche principali" role="group">
                 <KPICard label="Recensioni totali" value={reviews.length.toString()} />
                 <KPICard label="Valutazione media" value={average ? average.toString() : "–"} />
-                <KPICard label="Locali gestiti" value={restaurants.length.toString()} />
+                <KPICard label="Locali gestiti" value={businesses.length.toString()} />
                 {pending.length > 0 && (
                     <KPICard label="Da gestire" value={pending.length.toString()} type="alert" />
                 )}
@@ -129,7 +129,7 @@ export default function Overview() {
                 ) : (
                     <ul className={styles.reviewList} role="list">
                         {recentReviews.map(r => {
-                            const rest = restaurants.find(res => res.id === r.restaurant_id);
+                            const rest = businesses.find(res => res.id === r.business_id);
                             const isNegative = r.rating <= 3;
                             return (
                                 <li key={r.id} role="listitem" className={styles.reviewItem}>

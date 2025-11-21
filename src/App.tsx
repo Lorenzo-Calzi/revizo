@@ -32,7 +32,7 @@ export default function App() {
             <Route path="/update-password" element={<UpdatePassword />} />
 
             {/* Public QR route */}
-            <Route path="/r/:slug" element={<PublicReviewPage />} />
+            <Route path="/business/:slug" element={<PublicReviewPage />} />
 
             {/* Private area */}
             <Route
@@ -55,7 +55,7 @@ export default function App() {
             </Route>
 
             <Route
-                path="/dashboard/restaurants/:id"
+                path="/dashboard/businesses/:id"
                 element={<Navigate to="/dashboard/reviews" replace />}
             />
 

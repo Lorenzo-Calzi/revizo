@@ -20,8 +20,7 @@ import { useAuth } from "@context/useAuth";
 import Text from "@components/ui/Text/Text";
 import Skeleton from "@components/ui/Skeleton/Skeleton";
 import type { AnalyticsReview } from "@services/supabase/reviews";
-import { getUserRestaurants } from "@services/supabase/restaurants";
-import { Star } from "lucide-react";
+import { getUserBusinesses } from "@services/supabase/businesses";
 import styles from "./Analytics.module.scss";
 
 type Range = 7 | 30 | 90;
@@ -30,17 +29,17 @@ const COLORS = ["#ef4444", "#f97316", "#facc15", "#22c55e", "#3b82f6"];
 
 // Estendiamo il tipo per supportare più ristoranti senza rompere nulla
 type ExtendedAnalyticsReview = AnalyticsReview & {
-    restaurant_id?: string | null;
+    business_id?: string | null;
     restaurant_name?: string | null;
 };
 
 type AnalyticsQrScan = {
     id: string;
-    restaurant_id?: string | null;
+    business_id?: string | null;
     created_at: string;
 };
 
-type RestaurantOption = {
+type BusinessOption = {
     id: string;
     name: string;
 };
@@ -51,8 +50,8 @@ export default function Analytics() {
     const [reviews, setReviews] = useState<ExtendedAnalyticsReview[]>([]);
     const [qrScans, setQrScans] = useState<AnalyticsQrScan[]>([]);
     const [range, setRange] = useState<Range>(30);
-    const [selectedRestaurantId, setSelectedRestaurantId] = useState<string | "all">("all");
-    const [restaurants, setRestaurants] = useState<RestaurantOption[]>([]);
+    const [selectedBusinessId, setSelectedBusinessId] = useState<string | "all">("all");
+    const [businesses, setBusinesses] = useState<BusinessOption[]>([]);
 
     const [isLoadingReviews, setIsLoadingReviews] = useState(true);
     const [isLoadingScans, setIsLoadingScans] = useState(true);
@@ -68,12 +67,12 @@ export default function Analytics() {
             setIsLoadingScans(true);
 
             // 1. Carico i ristoranti
-            const userRestaurants = await getUserRestaurants(user.id);
-            setRestaurants(userRestaurants);
+            const userBusinesses = await getUserBusinesses(user.id);
+            setBusinesses(userBusinesses);
 
             // 2. Imposto default ristorante
-            const defaultId = userRestaurants[0]?.id ?? "all";
-            setSelectedRestaurantId(defaultId);
+            const defaultId = userBusinesses[0]?.id ?? "all";
+            setSelectedBusinessId(defaultId);
 
             // 3. Carico reviews
             const revs = await getAnalyticsReviews();
@@ -91,17 +90,17 @@ export default function Analytics() {
     }, [user?.id]);
 
     // 🔹 Opzioni ristoranti derivate dai dati (non serve chiamata extra)
-    const restaurantOptions = useMemo<RestaurantOption[]>(() => {
-        const map = new Map<string, RestaurantOption>();
+    const restaurantOptions = useMemo<BusinessOption[]>(() => {
+        const map = new Map<string, BusinessOption>();
 
         reviews.forEach(r => {
-            const id = r.restaurant_id;
+            const id = r.business_id;
             if (!id) return;
 
             if (!map.has(id)) {
                 map.set(id, {
                     id,
-                    name: r.restaurant_name || "Ristorante senza nome"
+                    name: r.restaurant_name || "Business senza nome"
                 });
             }
         });
@@ -111,10 +110,10 @@ export default function Analytics() {
 
     // Se non ho ancora una scelta e ci sono ristoranti, imposto il primo
     useEffect(() => {
-        if (selectedRestaurantId === "all" && restaurantOptions.length === 1) {
-            setSelectedRestaurantId(restaurantOptions[0].id);
+        if (selectedBusinessId === "all" && restaurantOptions.length === 1) {
+            setSelectedBusinessId(restaurantOptions[0].id);
         }
-    }, [restaurantOptions, selectedRestaurantId]);
+    }, [restaurantOptions, selectedBusinessId]);
 
     // 🔹 Cutoff temporale
     const cutoff = useMemo(() => {
@@ -129,26 +128,26 @@ export default function Analytics() {
             const created = new Date(r.created_at);
             if (created < cutoff) return false;
 
-            if (selectedRestaurantId !== "all") {
-                return r.restaurant_id === selectedRestaurantId;
+            if (selectedBusinessId !== "all") {
+                return r.business_id === selectedBusinessId;
             }
 
-            return selectedRestaurantId === "all" || !r.restaurant_id;
+            return selectedBusinessId === "all" || !r.business_id;
         });
-    }, [reviews, cutoff, selectedRestaurantId]);
+    }, [reviews, cutoff, selectedBusinessId]);
 
     const filteredScans = useMemo(() => {
         return qrScans.filter(s => {
             const created = new Date(s.created_at);
             if (created < cutoff) return false;
 
-            if (selectedRestaurantId !== "all" && s.restaurant_id) {
-                return s.restaurant_id === selectedRestaurantId;
+            if (selectedBusinessId !== "all" && s.business_id) {
+                return s.business_id === selectedBusinessId;
             }
 
-            return selectedRestaurantId === "all" || !s.restaurant_id;
+            return selectedBusinessId === "all" || !s.business_id;
         });
-    }, [qrScans, cutoff, selectedRestaurantId]);
+    }, [qrScans, cutoff, selectedBusinessId]);
 
     // 🔹 KPI recensioni
     const totalReviews = filteredReviews.length;
@@ -258,22 +257,22 @@ export default function Analytics() {
         <main className={styles.analytics} aria-label="Sezione analytics recensioni e scansioni QR">
             <header className={styles.header}>
                 <div className={styles.filtersRow}>
-                    <div className={styles.restaurantSelector}>
+                    <div className={styles.businessSelector}>
                         <label htmlFor="restaurant-select" className={styles.restaurantLabel}>
                             <Text variant="caption" colorVariant="muted">
-                                Ristorante
+                                Attività:
                             </Text>
                         </label>
 
                         <select
                             id="restaurant-select"
-                            className={styles.restaurantSelect}
-                            value={selectedRestaurantId}
-                            onChange={e => setSelectedRestaurantId(e.target.value)}
+                            className={styles.bSelect}
+                            value={selectedBusinessId}
+                            onChange={e => setSelectedBusinessId(e.target.value)}
                         >
                             <option value="all">Tutti i locali</option>
 
-                            {restaurants.map(r => (
+                            {businesses.map(r => (
                                 <option key={r.id} value={r.id}>
                                     {r.name}
                                 </option>
@@ -319,7 +318,7 @@ export default function Analytics() {
                     label="Scansioni QR"
                     value={totalQrScans.toString()}
                     // badge={
-                    //     selectedRestaurantId === "all" ? "Somma totale" : "Ristorante selezionato"
+                    //     selectedBusinessId === "all" ? "Somma totale" : "Business selezionato"
                     // }
                 />
             </section>

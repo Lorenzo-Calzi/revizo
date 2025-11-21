@@ -24,7 +24,7 @@ export interface Profile {
 export interface Review {
     id: string;
     user_id: string;
-    restaurant_id: string | null;
+    business_id: string | null;
     rating: number;
     comment: string;
     source: string;
@@ -35,11 +35,14 @@ export interface Review {
     tags?: string[];
 }
 
-export interface Restaurant {
+export interface Business {
     id: string;
     user_id: string;
     name: string;
-    city?: string;
+    city: string | null;
+    address: string | null;
     slug: string;
+    type: "restaurant" | "bar" | "hotel" | "hairdresser" | "beauty" | "shop" | "other";
     created_at: string;
+    updated_at: string;
 }
