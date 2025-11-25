@@ -35,6 +35,15 @@ export interface Review {
     tags?: string[];
 }
 
+export type BusinessType =
+    | "restaurant"
+    | "bar"
+    | "hotel"
+    | "hairdresser"
+    | "beauty"
+    | "shop"
+    | "other";
+
 export interface Business {
     id: string;
     user_id: string;
@@ -42,7 +51,30 @@ export interface Business {
     city: string | null;
     address: string | null;
     slug: string;
-    type: "restaurant" | "bar" | "hotel" | "hairdresser" | "beauty" | "shop" | "other";
+    type: BusinessType;
     created_at: string;
     updated_at: string;
+}
+
+export interface BusinessCategory {
+    id: string;
+    business_id: string;
+    name: string;
+    order_index: number;
+    visible: boolean;
+    created_at: string;
+}
+
+export interface BusinessItem {
+    id: string;
+    category_id: string;
+    name: string;
+    description: string | null;
+    price: number | null;
+    duration: number | null;
+    allergens: string[] | null;
+    image: string | null;
+    order_index: number;
+    visible: boolean;
+    created_at: string;
 }

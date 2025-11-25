@@ -12,13 +12,15 @@ import UpdatePassword from "./pages/Auth/UpdatePassword";
 // Dashboard pages
 import Overview from "@pages/Dashboard/Overview/Overview";
 import Profile from "@pages/Dashboard/Profile/Profile";
+import Catalog from "./pages/Dashboard/Catalog/Catalog";
 import Reviews from "@pages/Dashboard/Reviews/Reviews";
 import Analytics from "@pages/Dashboard/Analytics/Analytics";
 import Customization from "@pages/Dashboard/Settings/Customization/Customization";
 import Account from "@pages/Dashboard/Settings/Account/Account";
 
 // Public review flow
-import PublicReviewPage from "@pages/PublicReview/PublicReview";
+// import PublicReviewPage from "@pages/PublicReview/PublicReview";
+import BusinessPublicPage from "./pages/BusinessPublicPage/BusinessPublicPage";
 import Home from "./pages/Home/Home";
 
 export default function App() {
@@ -31,8 +33,11 @@ export default function App() {
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/update-password" element={<UpdatePassword />} />
 
-            {/* Public QR route */}
-            <Route path="/business/:slug" element={<PublicReviewPage />} />
+            {/* Public QR route
+            <Route path="/business/:slug" element={<PublicReviewPage />} /> */}
+
+            {/* Public Catalog Route */}
+            <Route path="/business/:slug" element={<BusinessPublicPage />} />
 
             {/* Private area */}
             <Route
@@ -45,6 +50,7 @@ export default function App() {
             >
                 <Route index element={<Overview />} />
                 <Route path="profile" element={<Profile />} />
+                <Route path="catalog" element={<Catalog />} />
                 <Route path="reviews" element={<Reviews />} />
                 <Route path="analytics" element={<Analytics />} />
                 <Route path="settings">

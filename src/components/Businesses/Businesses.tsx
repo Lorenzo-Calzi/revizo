@@ -427,12 +427,22 @@ export default function Businesses() {
                                                 <button
                                                     type="button"
                                                     onClick={() =>
+                                                        navigate(
+                                                            `/dashboard/catalog?businessId=${b.id}`
+                                                        )
+                                                    }
+                                                >
+                                                    Menù
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() =>
                                                         navigate("/dashboard/reviews", {
                                                             state: { businessId: b.id }
                                                         })
                                                     }
                                                 >
-                                                    Apri dettaglio
+                                                    Recensioni
                                                 </button>
                                             </>
                                         )}
