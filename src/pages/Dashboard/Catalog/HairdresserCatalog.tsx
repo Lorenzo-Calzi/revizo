@@ -1,16 +1,14 @@
-import React, { useEffect, useState } from "react";
-
+import React, { useState, useEffect } from "react";
 import Text from "@components/ui/Text/Text";
 import styles from "./Catalog.module.scss";
 
 import { uploadBusinessItemImage } from "@services/supabase/upload";
-import { ALLERGENS } from "@/constants/allergens";
 
 import type { Business, BusinessCategory, BusinessItem } from "@/types/database";
 
 type ItemsByCategory = Record<string, BusinessItem[]>;
 
-type RestaurantCatalogProps = {
+type HairdresserCatalogProps = {
     business: Business;
     categories: BusinessCategory[];
     items: ItemsByCategory;
@@ -28,7 +26,7 @@ type RestaurantCatalogProps = {
     onDeleteItem: (catId: string, itemId: string) => void | Promise<void>;
 };
 
-export default function RestaurantCatalog({
+export default function HairdresserCatalog({
     business,
     categories,
     items,
@@ -38,7 +36,7 @@ export default function RestaurantCatalog({
     onAddItem,
     onUpdateItem,
     onDeleteItem
-}: RestaurantCatalogProps) {
+}: HairdresserCatalogProps) {
     const [newCat, setNewCat] = useState("");
     const [openItemId, setOpenItemId] = useState<string | null>(null);
 
@@ -53,7 +51,7 @@ export default function RestaurantCatalog({
 
     return (
         <section className={styles.catalog}>
-            <Text variant="title-lg">Menu ristorante</Text>
+            <Text variant="title-lg">Servizi Parrucchiere</Text>
 
             {/* Add category */}
             <div className={styles.addCatForm}>
@@ -81,7 +79,6 @@ export default function RestaurantCatalog({
                                 value={cat.name}
                                 onChange={e => onUpdateCategory(cat.id, e.target.value)}
                             />
-
                             <button type="button" onClick={() => onDeleteCategory(cat.id)}>
                                 Elimina
                             </button>
@@ -89,7 +86,7 @@ export default function RestaurantCatalog({
 
                         <div className={styles.itemsList}>
                             {items[cat.id]?.map(item => (
-                                <MemoizedItemCard
+                                <MemoizedHairItemCard
                                     key={item.id}
                                     businessId={businessId}
                                     categoryId={cat.id}
@@ -103,8 +100,8 @@ export default function RestaurantCatalog({
                                 />
                             ))}
 
-                            <AddItemForm
-                                placeholder={`Aggiungi elemento in "${cat.name}"`}
+                            <AddHairItemForm
+                                placeholder={`Aggiungi servizio in "${cat.name}"`}
                                 onAdd={name => onAddItem(cat.id, name)}
                             />
                         </div>
@@ -116,10 +113,10 @@ export default function RestaurantCatalog({
 }
 
 // ═══════════════════════════════════════════════════
-// ITEM CARD (Accordion) - UI only, usa callback
+// ITEM CARD (Hairdresser)
 // ═══════════════════════════════════════════════════
 
-function RestaurantItemCard({
+function HairItemCard({
     businessId,
     categoryId,
     item,
@@ -136,50 +133,55 @@ function RestaurantItemCard({
     onUpdate: (itemId: string, catId: string, data: Partial<BusinessItem>) => void | Promise<void>;
     onDelete: (catId: string, itemId: string) => void | Promise<void>;
 }) {
-    // Stato locale stabilizzato per i campi editabili
     const [localName, setLocalName] = useState(item.name ?? "");
     const [localDescription, setLocalDescription] = useState(item.description ?? "");
     const [localPrice, setLocalPrice] = useState<string>(
         item.price != null ? String(item.price) : ""
+    );
+    const [localDuration, setLocalDuration] = useState<string>(
+        item.duration != null ? String(item.duration) : ""
     );
 
     useEffect(() => {
         setLocalName(item.name ?? "");
         setLocalDescription(item.description ?? "");
         setLocalPrice(item.price != null ? String(item.price) : "");
+        setLocalDuration(item.duration != null ? String(item.duration) : "");
     }, [item.id]);
 
-    const handleBlurName = async () => {
+    const displayPrice = item.price != null ? `€ ${item.price.toFixed(2)}` : "Prezzo non impostato";
+
+    const handleBlurName = () => {
         if (localName !== (item.name ?? "")) {
-            await onUpdate(item.id, categoryId, { name: localName });
+            void onUpdate(item.id, categoryId, { name: localName });
         }
     };
 
-    const handleBlurDescription = async () => {
+    const handleBlurDescription = () => {
         if (localDescription !== (item.description ?? "")) {
-            await onUpdate(item.id, categoryId, {
+            void onUpdate(item.id, categoryId, {
                 description: localDescription || null
             });
         }
     };
 
-    const handleBlurPrice = async () => {
+    const handleBlurPrice = () => {
         const currentPrice = item.price != null ? String(item.price) : "";
         if (localPrice !== currentPrice) {
-            await onUpdate(item.id, categoryId, {
+            void onUpdate(item.id, categoryId, {
                 price: localPrice === "" ? null : Number(localPrice)
             });
         }
     };
 
-    const toggleAllergen = async (id: string) => {
-        const current = item.allergens ?? [];
-        const next = current.includes(id) ? current.filter(a => a !== id) : [...current, id];
-
-        await onUpdate(item.id, categoryId, { allergens: next });
+    const handleBlurDuration = () => {
+        const currentValue = item.duration != null ? String(item.duration) : "";
+        if (localDuration !== currentValue) {
+            void onUpdate(item.id, categoryId, {
+                duration: localDuration === "" ? null : Number(localDuration)
+            });
+        }
     };
-
-    const displayPrice = item.price != null ? `€ ${item.price.toFixed(2)}` : "Prezzo non impostato";
 
     return (
         <div className={styles.itemCard}>
@@ -191,18 +193,12 @@ function RestaurantItemCard({
                         <div className={styles.itemImageWrap}>
                             {item.image ? (
                                 <>
-                                    <img
-                                        src={item.image}
-                                        alt={item.name}
-                                        className={styles.itemImage}
-                                    />
+                                    <img src={item.image} className={styles.itemImage} />
                                     <button
                                         type="button"
                                         className={styles.removeImageBtn}
                                         onClick={() =>
-                                            onUpdate(item.id, categoryId, {
-                                                image: null
-                                            })
+                                            onUpdate(item.id, categoryId, { image: null })
                                         }
                                     >
                                         Rimuovi
@@ -236,12 +232,10 @@ function RestaurantItemCard({
                     {/* TITOLO + PREZZO */}
                     <div className={styles.itemHeaderText}>
                         <div className={styles.itemTitle}>{localName || "Senza titolo"}</div>
-
                         <div className={styles.itemPrice}>{displayPrice}</div>
                     </div>
                 </div>
 
-                {/* TOGGLE */}
                 <button type="button" className={styles.itemToggleBtn} onClick={onToggle}>
                     <span>{isOpen ? "Chiudi" : "Modifica"}</span>
                     <span
@@ -254,17 +248,15 @@ function RestaurantItemCard({
                 </button>
             </div>
 
-            {/* BODY (accordion) */}
+            {/* BODY */}
             <div
-                key={item.id}
                 className={`${styles.itemBody} ${
                     isOpen ? styles.itemBodyOpen : styles.itemBodyClosed
                 }`}
             >
                 <div className={styles.itemForm}>
-                    {/* Titolo */}
                     <label className={styles.formLabel}>
-                        Titolo
+                        Servizio
                         <input
                             className={styles.formInput}
                             value={localName}
@@ -273,7 +265,6 @@ function RestaurantItemCard({
                         />
                     </label>
 
-                    {/* Descrizione */}
                     <label className={styles.formLabel}>
                         Descrizione
                         <textarea
@@ -285,7 +276,6 @@ function RestaurantItemCard({
                         />
                     </label>
 
-                    {/* Prezzo */}
                     <label className={styles.formLabel}>
                         Prezzo €
                         <input
@@ -299,24 +289,19 @@ function RestaurantItemCard({
                         />
                     </label>
 
-                    {/* Allergeni */}
                     <label className={styles.formLabel}>
-                        Allergeni
-                        <div className={styles.allergenList}>
-                            {ALLERGENS.map(a => (
-                                <label key={a.id} className={styles.allergenItem}>
-                                    <input
-                                        type="checkbox"
-                                        checked={item.allergens?.includes(a.id) ?? false}
-                                        onChange={() => toggleAllergen(a.id)}
-                                    />
-                                    {a.label}
-                                </label>
-                            ))}
-                        </div>
+                        Durata (min)
+                        <input
+                            className={styles.formInput}
+                            type="number"
+                            min="0"
+                            step="5"
+                            value={localDuration}
+                            onChange={e => setLocalDuration(e.target.value)}
+                            onBlur={handleBlurDuration}
+                        />
                     </label>
 
-                    {/* Elimina */}
                     <button
                         type="button"
                         className={styles.deleteItemBtn}
@@ -330,14 +315,13 @@ function RestaurantItemCard({
     );
 }
 
-// MEMOIZED PER EVITARE RE-RENDER INUTILI
-const MemoizedItemCard = React.memo(RestaurantItemCard);
+const MemoizedHairItemCard = React.memo(HairItemCard);
 
 // ═══════════════════════════════════════════════════
-// Add Item Form
+// Add item form (hairdresser)
 // ═══════════════════════════════════════════════════
 
-function AddItemForm({
+function AddHairItemForm({
     placeholder,
     onAdd
 }: {
@@ -346,10 +330,10 @@ function AddItemForm({
 }) {
     const [value, setValue] = useState("");
 
-    const handleAdd = async () => {
+    const handleAdd = () => {
         const trimmed = value.trim();
         if (!trimmed) return;
-        await onAdd(trimmed);
+        void onAdd(trimmed);
         setValue("");
     };
 
@@ -362,7 +346,7 @@ function AddItemForm({
                 onKeyDown={e => {
                     if (e.key === "Enter") {
                         e.preventDefault();
-                        void handleAdd();
+                        handleAdd();
                     }
                 }}
             />

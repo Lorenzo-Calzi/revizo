@@ -52,6 +52,7 @@ export interface Business {
     address: string | null;
     slug: string;
     type: BusinessType;
+    cover_image: string;
     created_at: string;
     updated_at: string;
 }

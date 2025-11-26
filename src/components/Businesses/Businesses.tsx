@@ -191,25 +191,6 @@ export default function Businesses() {
 
                     <div className={styles.field}>
                         <label className={styles.label}>
-                            Slug
-                            <input
-                                type="text"
-                                placeholder="es. snoopy-bar"
-                                value={slug}
-                                onChange={e => setSlug(generateSlug(e.target.value))}
-                                required
-                            />
-                        </label>
-                        <Text variant="caption" colorVariant="muted">
-                            URL finale:{" "}
-                            <code>
-                                {previewBaseUrl}/business/{slug || "<slug>"}
-                            </code>
-                        </Text>
-                    </div>
-
-                    <div className={styles.field}>
-                        <label className={styles.label}>
                             Tipo di attività
                             <select
                                 value={type}
@@ -225,6 +206,25 @@ export default function Businesses() {
                                 <option value="other">Altro</option>
                             </select>
                         </label>
+                    </div>
+
+                    <div className={styles.field}>
+                        <label className={styles.label}>
+                            Slug
+                            <input
+                                type="text"
+                                placeholder="es. snoopy-bar"
+                                value={slug}
+                                onChange={e => setSlug(generateSlug(e.target.value))}
+                                required
+                            />
+                        </label>
+                        <Text variant="caption" colorVariant="muted">
+                            URL finale:{" "}
+                            <code>
+                                {previewBaseUrl}/business/{slug || "<slug>"}
+                            </code>
+                        </Text>
                     </div>
                 </div>
 
