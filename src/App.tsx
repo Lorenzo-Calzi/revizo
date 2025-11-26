@@ -20,7 +20,7 @@ import Account from "@pages/Dashboard/Settings/Account/Account";
 
 // Public review flow
 // import PublicReviewPage from "@pages/PublicReview/PublicReview";
-import BusinessPublicPage from "./pages/BusinessPublicPage/BusinessPublicPage";
+import PublicCatalogPage from "./pages/PublicCatalog/PublicCatalogPage";
 import Home from "./pages/Home/Home";
 
 export default function App() {
@@ -37,7 +37,7 @@ export default function App() {
             <Route path="/business/:slug" element={<PublicReviewPage />} /> */}
 
             {/* Public Catalog Route */}
-            <Route path="/business/:slug" element={<BusinessPublicPage />} />
+            <Route path="/business/:slug" element={<PublicCatalogPage />} />
 
             {/* Private area */}
             <Route
