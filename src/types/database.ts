@@ -52,7 +52,7 @@ export interface Business {
     address: string | null;
     slug: string;
     type: BusinessType;
-    cover_image: string;
+    cover_image: string | null;
     created_at: string;
     updated_at: string;
 }

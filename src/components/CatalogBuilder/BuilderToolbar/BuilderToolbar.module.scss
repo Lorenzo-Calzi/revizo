@@ -1,0 +1,44 @@
+.toolbar {
+  height: 60px;
+  background: #fff;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1.5rem;
+}
+
+.left .logo {
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.center {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.center button {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 0.25rem 0.5rem;
+  cursor: pointer;
+  font-size: 1.2rem;
+  transition: 0.2s;
+}
+
+.center button.active {
+  border-color: #2563eb;
+  background: #eff6ff;
+}
+
+.right .saveBtn {
+  background: #2563eb;
+  color: white;
+  padding: 0.5rem 1.1rem;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-weight: 500;
+}

@@ -6,7 +6,9 @@ import {
     getUserBusinesses,
     addBusiness,
     deleteBusiness,
-    updateBusiness
+    updateBusiness,
+    uploadBusinessCover,
+    removeBusinessCover
 } from "@services/supabase/businesses";
 import type { Business } from "@/types/database";
 import Text from "@components/ui/Text/Text";
@@ -34,12 +36,16 @@ export default function Businesses() {
     const [address, setAddress] = useState("");
     const [slug, setSlug] = useState("");
     const [type, setType] = useState<Business["type"]>("restaurant");
+    const [coverFile, setCoverFile] = useState<File | null>(null);
+    const [coverPreview, setCoverPreview] = useState<string | null>(null);
 
     const [loading, setLoading] = useState(false);
 
     // edit
     const [editingId, setEditingId] = useState<string | null>(null);
     const [editData, setEditData] = useState<Partial<Business>>({});
+    const [editCoverFile, setEditCoverFile] = useState<File | null>(null);
+    const [editCoverPreview, setEditCoverPreview] = useState<string | null>(null);
 
     const navigate = useNavigate();
 
@@ -73,12 +79,17 @@ export default function Businesses() {
 
         setLoading(true);
         try {
-            await addBusiness(user.id, name, city, address, cleanedSlug, type);
-            setName("");
+            const newBusiness = await addBusiness(user.id, name, city, address, cleanedSlug, type);
+            if (coverFile) {
+                await uploadBusinessCover(newBusiness.id, coverFile);
+            }
             setCity("");
             setAddress("");
             setSlug("");
             setType("restaurant");
+            setCoverFile(null);
+            setCoverPreview(null);
+
             await refreshBusinesses();
         } catch (e) {
             console.error("Errore aggiunta business:", e);
@@ -99,9 +110,32 @@ export default function Businesses() {
         }
     }
 
+    function handleCoverChange(e: React.ChangeEvent<HTMLInputElement>) {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setCoverFile(file);
+
+        const url = URL.createObjectURL(file);
+        setCoverPreview(url);
+    }
+
+    function handleEditCoverChange(e: React.ChangeEvent<HTMLInputElement>) {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setEditCoverFile(file);
+
+        const url = URL.createObjectURL(file);
+        setEditCoverPreview(url);
+    }
+
     function handleEditClick(business: Business) {
         setEditingId(business.id);
         setEditData(business);
+
+        setEditCoverFile(null);
+        setEditCoverPreview(business.cover_image ?? null);
     }
 
     async function handleSaveEdit(id: string) {
@@ -127,7 +161,14 @@ export default function Businesses() {
                 slug: cleanedSlug,
                 type: editData.type || "restaurant"
             });
+            if (editCoverFile) {
+                await uploadBusinessCover(id, editCoverFile);
+            }
+
             setEditingId(null);
+            setEditCoverFile(null);
+            setEditCoverPreview(null);
+
             await refreshBusinesses();
         } catch (e) {
             console.error("Errore aggiornamento business:", e);
@@ -225,6 +266,19 @@ export default function Businesses() {
                                 {previewBaseUrl}/business/{slug || "<slug>"}
                             </code>
                         </Text>
+                    </div>
+
+                    <div className={styles.field}>
+                        <label className={styles.label}>
+                            Foto copertina
+                            <input type="file" accept="image/*" onChange={handleCoverChange} />
+                        </label>
+
+                        {coverPreview && (
+                            <div className={styles.imagePreview}>
+                                <img src={coverPreview} alt={`Cover di ${name || "business"}`} />
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -356,6 +410,48 @@ export default function Businesses() {
                                                         {editData.slug || "<slug>"}
                                                     </code>
                                                 </Text>
+                                            </div>
+
+                                            <div className={styles.fieldInline}>
+                                                <label className={styles.label}>
+                                                    Foto copertina
+                                                    <input
+                                                        type="file"
+                                                        accept="image/*"
+                                                        onChange={handleEditCoverChange}
+                                                    />
+                                                </label>
+
+                                                {(editCoverPreview || editData.cover_image) && (
+                                                    <div className={styles.imagePreview}>
+                                                        <img
+                                                            src={
+                                                                editCoverPreview ||
+                                                                editData.cover_image ||
+                                                                ""
+                                                            }
+                                                            alt={`Cover di ${editData.name ?? ""}`}
+                                                        />
+                                                    </div>
+                                                )}
+
+                                                {editData.cover_image && (
+                                                    <button
+                                                        type="button"
+                                                        className={styles.removeImageButton}
+                                                        onClick={async () => {
+                                                            await removeBusinessCover(id);
+                                                            setEditData(prev => ({
+                                                                ...prev,
+                                                                cover_image: null
+                                                            }));
+                                                            setEditCoverPreview(null);
+                                                            await refreshBusinesses();
+                                                        }}
+                                                    >
+                                                        Rimuovi immagine
+                                                    </button>
+                                                )}
                                             </div>
                                         </>
                                     ) : (

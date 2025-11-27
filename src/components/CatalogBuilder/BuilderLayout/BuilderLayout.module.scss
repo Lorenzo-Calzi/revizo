@@ -1,0 +1,12 @@
+.builder {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: #f3f4f6;
+}
+
+.main {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}

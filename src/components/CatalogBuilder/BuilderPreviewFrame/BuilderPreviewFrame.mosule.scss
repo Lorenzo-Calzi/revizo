@@ -1,0 +1,23 @@
+.previewWrap {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 1rem;
+  overflow-y: auto;
+}
+
+.preview {
+  background: white;
+  min-height: 100%;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: width 0.2s ease;
+}
+
+.placeholder {
+  padding: 2rem;
+  text-align: center;
+  color: #6b7280;
+}

@@ -1,0 +1,33 @@
+.sidebar {
+  width: 320px;
+  background: #ffffff;
+  border-right: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+}
+
+.tabs {
+  display: flex;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.tabs button {
+  flex: 1;
+  padding: 0.8rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-weight: 500;
+  transition: 0.2s;
+}
+
+.tabs button.active {
+  background: #f1f5f9;
+  border-bottom: 2px solid #2563eb;
+}
+
+.panel {
+  padding: 1rem;
+  flex: 1;
+  overflow-y: auto;
+}

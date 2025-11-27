@@ -4,6 +4,7 @@ import styles from "./PublicCatalog.module.scss";
 import PublicCatalogNavbar from "./PublicCatalogNavbar";
 import PublicCatalogSection from "./PublicCatalogSection";
 import PublicItemModal from "./PublicItemModal";
+import Text from "../ui/Text/Text";
 
 import type { Business, BusinessCategory, BusinessItem } from "@/types/database";
 
@@ -74,9 +75,24 @@ export default function PublicCatalog({ business, categories, items }: PublicCat
             {/* HEADER */}
             <header ref={headerRef} className={styles.header}>
                 <div className={styles.headerInner}>
-                    {/* Nessuna immagine qui perché Business non ha 'image' */}
-                    <h1 className={styles.headerTitle}>{business.name}</h1>
-                    <p className={styles.headerSubtitle}>{business.type}</p>
+                    <div className={styles.headerImageWrap}>
+                        {business.cover_image ? (
+                            <img
+                                src={business.cover_image}
+                                alt={`Cover di ${business.name}`}
+                                className={styles.headerImage}
+                                loading="lazy"
+                            />
+                        ) : (
+                            <div className={styles.headerImagePlaceholder}>
+                                <span>{business.name}</span>
+                            </div>
+                        )}
+                    </div>
+
+                    <Text variant="display" align="center" className={styles.headerTitle}>
+                        {business.name}
+                    </Text>
                 </div>
             </header>
 

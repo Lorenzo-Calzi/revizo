@@ -248,3 +248,50 @@
     background: rgba(255, 255, 255, 0.05);
   }
 }
+
+.imageUpload {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+
+  .label {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text-muted, #6b7280);
+  }
+
+  input[type="file"] {
+    padding: 0.55rem 0.75rem;
+    background: var(--card-bg, #ffffff);
+    border: 1px solid var(--border, #e5e7eb);
+    border-radius: 10px;
+    font-size: 0.9rem;
+  }
+}
+
+.imagePreview {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #f1f5f9;
+  border: 1px solid var(--border, #e5e7eb);
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+}
+
+.removeImageButton {
+  margin-top: 0.5rem;
+  background: #fee2e2;
+  border-color: #fecaca;
+  color: #b91c1c;
+
+  &:hover {
+    background: #fecaca;
+  }
+}

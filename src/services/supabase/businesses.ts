@@ -19,11 +19,15 @@ export async function addBusiness(
     address: string,
     slug: string,
     type: string
-) {
-    const { error } = await supabase
+): Promise<Business> {
+    const { data, error } = await supabase
         .from("businesses")
-        .insert([{ user_id: userId, name, city, address, slug, type }]);
+        .insert([{ user_id: userId, name, city, address, slug, type }])
+        .select("*")
+        .single();
+
     if (error) throw error;
+    return data as Business;
 }
 
 export async function deleteBusiness(id: string) {
@@ -59,33 +63,44 @@ export async function getBusinessBySlug(slug: string): Promise<Business | null> 
 }
 
 export async function uploadBusinessCover(businessId: string, file: File): Promise<string | null> {
-    const user = supabase.auth.getUser();
-    if (!user) throw new Error("Not authenticated");
+    // Recuperiamo la sessione corretta
+    const {
+        data: { session }
+    } = await supabase.auth.getSession();
 
-    if (!file) throw new Error("File mancante");
-
-    // Estensione file
-    const ext = file.name.split(".").pop() || "jpg";
-
-    // Nome file unico
-    const fileName = `${businessId}.${ext}`;
-
-    // Upload
-    const { data, error } = await supabase.storage.from("business-covers").upload(fileName, file, {
-        upsert: true
-    });
-
-    if (error) {
-        console.error("Errore upload cover:", error);
-        throw new Error("Upload fallito");
+    if (!session) {
+        throw new Error("Not authenticated: session missing");
     }
 
-    // Ottieni URL pubblico
+    if (!file) {
+        throw new Error("File mancante");
+    }
+
+    const ext = file.name.split(".").pop() || "jpg";
+    const fileName = `${businessId}.${ext}`;
+
+    console.log("Uploading file:", fileName);
+
+    // Forziamo l'Authorization header
+    const { error: uploadError } = await supabase.storage
+        .from("business-covers")
+        .upload(fileName, file, {
+            upsert: true,
+            contentType: file.type,
+            headers: {
+                Authorization: `Bearer ${session.access_token}`
+            }
+        });
+
+    if (uploadError) {
+        console.error("Errore upload cover:", uploadError);
+        throw uploadError;
+    }
+
     const {
         data: { publicUrl }
     } = supabase.storage.from("business-covers").getPublicUrl(fileName);
 
-    // Salva nel DB
     await supabase.from("businesses").update({ cover_image: publicUrl }).eq("id", businessId);
 
     return publicUrl;
