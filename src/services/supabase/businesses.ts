@@ -1,5 +1,6 @@
 import { supabase } from "./client";
 import type { Business } from "@/types/database";
+import type { CatalogTheme } from "@/types/theme";
 
 export async function getUserBusinesses(userId: string): Promise<Business[]> {
     const { data, error } = await supabase
@@ -124,4 +125,10 @@ export async function removeBusinessCover(businessId: string) {
     }
 
     await supabase.from("businesses").update({ cover_image: null }).eq("id", businessId);
+}
+
+export async function updateBusinessTheme(businessId: string, theme: CatalogTheme) {
+    const { error } = await supabase.from("businesses").update({ theme }).eq("id", businessId);
+
+    if (error) throw error;
 }

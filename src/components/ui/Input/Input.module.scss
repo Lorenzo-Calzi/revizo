@@ -1,39 +1,33 @@
 @use "@styles/variables" as *;
 @use "sass:color";
 
-/* ----------------------------------------------------
-   WRAPPER
----------------------------------------------------- */
+/* WRAPPER ------------------------------------------ */
 .wrapper {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: 0.4rem;
   width: 100%;
 }
 
-/* ----------------------------------------------------
-   LABEL
----------------------------------------------------- */
+/* LABEL -------------------------------------------- */
 .label {
-  font-weight: 600;
   font-size: 0.9rem;
+  font-weight: 600;
   color: var(--text, #0f172a);
 }
 
-/* ----------------------------------------------------
-   INPUT
----------------------------------------------------- */
+/* INPUT -------------------------------------------- */
 .input {
   width: 100%;
-  padding: 0.6rem 0.8rem;
+  padding: 0.62rem 0.85rem;
 
   background: var(--card-bg, #ffffff);
   color: var(--text, #0f172a);
-  font-size: 1rem;
 
+  font-size: 0.95rem;
   border-radius: 8px;
-  border: 1.5px solid var(--border, #cbd5e1);
 
+  border: 1.5px solid var(--border, #cbd5e1);
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 
   &::placeholder {
@@ -42,24 +36,38 @@
 
   &:focus-visible {
     outline: none;
-    border-color: var(--brand-primary, #2563eb);
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25);
+    border-color: var(--brand-primary, #6366f1);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25);
   }
 
   &:disabled {
     opacity: 0.6;
-    cursor: not-allowed;
     background: var(--hover-bg, #f1f5f9);
+    cursor: not-allowed;
+  }
+
+  /* DARK MODE */
+  [data-theme="dark"] & {
+    background: #1e293b;
+    border-color: #334155;
+    color: #f1f5f9;
+
+    &::placeholder {
+      color: #64748b;
+    }
+
+    &:focus-visible {
+      border-color: var(--brand-primary, #6366f1);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.4);
+    }
   }
 }
 
-/* ----------------------------------------------------
-   ERROR TEXT
----------------------------------------------------- */
+/* ERROR MESSAGE ----------------------------------- */
 .error {
   font-size: 0.8rem;
-  color: #dc2626; /* semantic red */
-  margin-top: 0.15rem;
+  color: #dc2626;
+  margin-top: 0.1rem;
 
   [data-theme="dark"] & {
     color: #f87171;

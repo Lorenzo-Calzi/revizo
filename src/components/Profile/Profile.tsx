@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@context/useAuth";
 import { getProfile, updateProfile, uploadAvatar } from "@services/supabase/profile";
 import type { Profile } from "@/types/database";
-import Businesses from "@components/Businesses/Businesses";
 import Text from "@components/ui/Text/Text";
 import { Input, Button } from "@components/ui";
 import styles from "./Profile.module.scss";
@@ -123,8 +122,6 @@ export default function Profile() {
                     </Text>
                 )}
             </form>
-
-            <Businesses />
         </div>
     );
 }

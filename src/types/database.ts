@@ -1,3 +1,4 @@
+import type { CatalogTheme } from "@/types/theme";
 export interface Feedback {
     id: string;
     user_id: string;
@@ -53,6 +54,7 @@ export interface Business {
     slug: string;
     type: BusinessType;
     cover_image: string | null;
+    theme: CatalogTheme | null;
     created_at: string;
     updated_at: string;
 }

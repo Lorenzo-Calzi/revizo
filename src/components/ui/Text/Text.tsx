@@ -22,6 +22,7 @@ interface TextProps {
     weight?: Weight;
     align?: "left" | "center" | "right";
     colorVariant?: ColorVariant;
+    color?: string;
     className?: string;
     children: React.ReactNode;
 }
@@ -35,6 +36,7 @@ export default function Text({
     weight,
     align = "left",
     colorVariant = "default",
+    color,
     className,
     children,
     ...props
@@ -43,13 +45,16 @@ export default function Text({
         styles.text,
         styles[variant],
         styles[`align-${align}`],
-        styles[`color-${colorVariant}`],
+        !color && styles[`color-${colorVariant}`],
         className
     ]
         .filter(Boolean)
         .join(" ");
 
-    const style: React.CSSProperties = weight ? { fontWeight: weight } : {};
+    const style: React.CSSProperties = {
+        ...(weight && { fontWeight: weight }),
+        ...(color && { color })
+    };
 
     const Component = Tag as React.ElementType;
 

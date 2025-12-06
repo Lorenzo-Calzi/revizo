@@ -1,14 +1,12 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-
 import PublicCatalog from "@components/PublicCatalog/PublicCatalog";
-
 import { getBusinessBySlug } from "@services/supabase/businesses";
 import { getBusinessCategories, getBusinessItemsByCategory } from "@services/supabase/catalog";
-
 import Text from "@components/ui/Text/Text";
-
 import type { Business, BusinessCategory, BusinessItem } from "@/types/database";
+import { CatalogThemeProvider } from "@context/CatalogThemeContext/CatalogThemeProvider";
+import { defaultTheme } from "@/constants/catalogTheme";
 
 type ItemsByCategory = Record<string, BusinessItem[]>;
 
@@ -68,5 +66,14 @@ export default function PublicCatalogPage() {
         );
     }
 
-    return <PublicCatalog business={business} categories={categories} items={items} />;
+    return (
+        <CatalogThemeProvider theme={business.theme ?? defaultTheme}>
+            <PublicCatalog
+                business={business}
+                categories={categories}
+                items={items}
+                theme={business.theme ?? defaultTheme}
+            />
+        </CatalogThemeProvider>
+    );
 }

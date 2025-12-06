@@ -3,6 +3,7 @@ import { useAuth } from "@context/useAuth";
 import { useTheme } from "@/context/Theme/useTheme";
 import Text from "@components/ui/Text/Text";
 import styles from "./Customization.module.scss";
+import Profile from "@/components/Profile/Profile";
 
 export default function Customization() {
     const { user } = useAuth();
@@ -12,9 +13,7 @@ export default function Customization() {
 
     return (
         <div className={styles.settings}>
-            <Text variant="body" colorVariant="muted">
-                Personalizza la tua esperienza su Revizo.
-            </Text>
+            <Profile />
 
             <div className={styles.section}>
                 <Text variant="title-sm">Aspetto</Text>

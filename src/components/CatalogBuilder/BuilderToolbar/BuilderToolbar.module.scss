@@ -41,4 +41,18 @@
   border: none;
   cursor: pointer;
   font-weight: 500;
+
+  // &:hover:not(:disabled) {
+  //   background: var(--brand-primary-dark);
+  //   transform: translateY(-1px);
+  // }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+    background: #adb3b8;
+    color: #fff;
+    transform: none;
+    box-shadow: none;
+  }
 }

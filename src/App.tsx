@@ -2,7 +2,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import MainLayout from "@layouts/MainLayout/MainLayout";
 import { ProtectedRoute } from "@components/ProtectedRoute";
 
-// Login pages
+// Auth pages
 import Login from "./pages/Auth/Login";
 import VerifyOtp from "./pages/Auth/VerifyOtp";
 import SignUp from "./pages/Auth/SignUp";
@@ -11,35 +11,37 @@ import UpdatePassword from "./pages/Auth/UpdatePassword";
 
 // Dashboard pages
 import Overview from "@pages/Dashboard/Overview/Overview";
-import Profile from "@pages/Dashboard/Profile/Profile";
-import Catalog from "./pages/Dashboard/Catalog/Catalog";
+import Businesses from "./pages/Dashboard/Businesses/Businesses";
+import Catalog from "@pages/Dashboard/Catalog/Catalog";
 import Reviews from "@pages/Dashboard/Reviews/Reviews";
 import Analytics from "@pages/Dashboard/Analytics/Analytics";
 import Customization from "@pages/Dashboard/Settings/Customization/Customization";
-import Account from "@pages/Dashboard/Settings/Account/Account";
 
-// Public review flow
-// import PublicReviewPage from "@pages/PublicReview/PublicReview";
+// Catalog Editor
+import CatalogEditorPage from "./pages/CatalogEditorPage/CatalogEditorPage";
+
+// Public pages
 import PublicCatalogPage from "./pages/PublicCatalog/PublicCatalogPage";
 import Home from "./pages/Home/Home";
 
 export default function App() {
     return (
         <Routes>
+            {/* Public routes */}
             <Route path="/" element={<Home />} />
+            <Route path="/business/:slug" element={<PublicCatalogPage />} />
+
+            {/* Auth routes */}
             <Route path="/login" element={<Login />} />
             <Route path="/verify-otp" element={<VerifyOtp />} />
             <Route path="/signup" element={<SignUp />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/update-password" element={<UpdatePassword />} />
 
-            {/* Public QR route
-            <Route path="/business/:slug" element={<PublicReviewPage />} /> */}
+            {/* Catalog editor (protected but outside dashboard nav) */}
+            <Route path="/dashboard/business/:businessId/editor" element={<CatalogEditorPage />} />
 
-            {/* Public Catalog Route */}
-            <Route path="/business/:slug" element={<PublicCatalogPage />} />
-
-            {/* Private area */}
+            {/* Private dashboard area */}
             <Route
                 path="/dashboard"
                 element={
@@ -49,23 +51,28 @@ export default function App() {
                 }
             >
                 <Route index element={<Overview />} />
-                <Route path="profile" element={<Profile />} />
+
+                {/* New: Le tue attività */}
+                <Route path="businesses" element={<Businesses />} />
+
                 <Route path="catalog" element={<Catalog />} />
                 <Route path="reviews" element={<Reviews />} />
                 <Route path="analytics" element={<Analytics />} />
+
+                {/* Settings */}
                 <Route path="settings">
                     <Route index element={<Customization />} />
                     <Route path="theme" element={<Customization />} />
-                    <Route path="account" element={<Account />} />
                 </Route>
             </Route>
 
+            {/* Redirect for legacy route */}
             <Route
                 path="/dashboard/businesses/:id"
                 element={<Navigate to="/dashboard/reviews" replace />}
             />
 
-            {/* Redirect/404 se vuoi */}
+            {/* Global 404 → dashboard */}
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
     );

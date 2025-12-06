@@ -1,12 +1,12 @@
 import { useRef, useState, useEffect } from "react";
-import styles from "./PublicCatalog.module.scss";
-
+import { CatalogThemeProvider } from "@context/CatalogThemeContext/CatalogThemeProvider";
 import PublicCatalogNavbar from "./PublicCatalogNavbar";
 import PublicCatalogSection from "./PublicCatalogSection";
 import PublicItemModal from "./PublicItemModal";
 import Text from "../ui/Text/Text";
-
 import type { Business, BusinessCategory, BusinessItem } from "@/types/database";
+import type { CatalogTheme } from "@/types/theme";
+import styles from "./PublicCatalog.module.scss";
 
 type ItemsByCategory = Record<string, BusinessItem[]>;
 
@@ -14,9 +14,10 @@ type PublicCatalogProps = {
     business: Business;
     categories: BusinessCategory[];
     items: ItemsByCategory;
+    theme: CatalogTheme;
 };
 
-export default function PublicCatalog({ business, categories, items }: PublicCatalogProps) {
+export default function PublicCatalog({ business, categories, items, theme }: PublicCatalogProps) {
     const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
     const [selectedItem, setSelectedItem] = useState<BusinessItem | null>(null);
     const headerRef = useRef<HTMLDivElement | null>(null);
@@ -71,65 +72,74 @@ export default function PublicCatalog({ business, categories, items }: PublicCat
     }, [categories]);
 
     return (
-        <div className={styles.page}>
-            {/* HEADER */}
-            <header ref={headerRef} className={styles.header}>
-                <div className={styles.headerInner}>
-                    <div className={styles.headerImageWrap}>
-                        {business.cover_image ? (
-                            <img
-                                src={business.cover_image}
-                                alt={`Cover di ${business.name}`}
-                                className={styles.headerImage}
-                                loading="lazy"
-                            />
-                        ) : (
-                            <div className={styles.headerImagePlaceholder}>
-                                <span>{business.name}</span>
-                            </div>
-                        )}
+        <CatalogThemeProvider theme={theme}>
+            <div className={styles.page}>
+                {/* HEADER */}
+                <header
+                    ref={headerRef}
+                    className={styles.header}
+                    style={{ backgroundColor: theme.headerBackground }}
+                >
+                    <div className={styles.headerInner}>
+                        <div
+                            className={styles.headerImageWrap}
+                            style={{ borderRadius: theme.heroRadius }}
+                        >
+                            {business.cover_image ? (
+                                <img
+                                    src={business.cover_image}
+                                    alt={`Cover di ${business.name}`}
+                                    className={styles.headerImage}
+                                    loading="lazy"
+                                />
+                            ) : (
+                                <div className={styles.headerImagePlaceholder}>
+                                    <span>{business.name}</span>
+                                </div>
+                            )}
+                        </div>
+
+                        <Text variant="display" align="center" className={styles.headerTitle}>
+                            {business.name}
+                        </Text>
                     </div>
+                </header>
 
-                    <Text variant="display" align="center" className={styles.headerTitle}>
-                        {business.name}
-                    </Text>
+                {/* NAVBAR */}
+                <div ref={navbarRef} className={styles.navbar}>
+                    <PublicCatalogNavbar
+                        categories={categories}
+                        activeCategory={activeCategory}
+                        onSelectCategory={scrollToCategory}
+                    />
                 </div>
-            </header>
 
-            {/* NAVBAR */}
-            <div ref={navbarRef} className={styles.navbar}>
-                <PublicCatalogNavbar
-                    categories={categories}
-                    activeCategory={activeCategory}
-                    onSelectCategory={scrollToCategory}
+                {/* CONTENT */}
+                <main className={styles.content}>
+                    {categories.map(cat => (
+                        <div
+                            key={cat.id}
+                            ref={el => {
+                                sectionRefs.current[cat.id] = el;
+                            }}
+                            className={styles.section}
+                        >
+                            <PublicCatalogSection
+                                category={cat}
+                                items={items[cat.id] ?? []}
+                                businessType={business.type}
+                                onSelectItem={setSelectedItem}
+                            />
+                        </div>
+                    ))}
+                </main>
+
+                <PublicItemModal
+                    item={selectedItem}
+                    businessType={business.type}
+                    onClose={() => setSelectedItem(null)}
                 />
             </div>
-
-            {/* CONTENT */}
-            <main className={styles.content}>
-                {categories.map(cat => (
-                    <div
-                        key={cat.id}
-                        ref={el => {
-                            sectionRefs.current[cat.id] = el;
-                        }}
-                        className={styles.section}
-                    >
-                        <PublicCatalogSection
-                            category={cat}
-                            items={items[cat.id] ?? []}
-                            businessType={business.type}
-                            onSelectItem={setSelectedItem}
-                        />
-                    </div>
-                ))}
-            </main>
-
-            <PublicItemModal
-                item={selectedItem}
-                businessType={business.type}
-                onClose={() => setSelectedItem(null)}
-            />
-        </div>
+        </CatalogThemeProvider>
     );
 }

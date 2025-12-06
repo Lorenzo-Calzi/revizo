@@ -14,7 +14,6 @@
 
 .header {
   padding: 2rem 1rem 0;
-  background: white;
 }
 
 .headerInner {
@@ -67,7 +66,6 @@
   position: sticky;
   top: 0;
   z-index: 20;
-  background: white;
   border-bottom: 1px solid #eee;
   padding: 0;
 }
@@ -89,22 +87,11 @@
 
 .navItem {
   padding: 0.5rem 1.1rem;
-  background: #f1f5f9;
   border-radius: 999px;
   border: none;
   font-size: 0.92rem;
   white-space: nowrap;
   cursor: pointer;
-  color: #475569;
-
-  &:hover {
-    background: #e2e8f0;
-  }
-}
-
-.navItemActive {
-  background: var(--brand-primary, #10b981);
-  color: white !important;
 }
 
 /* =========================================
@@ -138,11 +125,16 @@
 .sectionItems {
   display: grid;
   gap: 1rem;
-
   grid-template-columns: 1fr;
 
   @media (min-width: 640px) {
     grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+:global(.device-mobile) {
+  .sectionItems {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -208,24 +200,14 @@
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  gap: 0.5rem;
 }
 
-.cardTitle {
-  font-size: 1rem;
-  font-weight: 600;
-  color: #111827;
-}
-
-.cardDescription {
-  margin-top: 0.35rem;
-  font-size: 0.85rem;
-  color: #4b5563;
-}
-
-.cardPrice {
-  margin-top: 0.5rem;
-  font-size: 0.95rem;
-  font-weight: 700;
+.cardHeader {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 0.5rem;
 }
 
 .cardExtraRow {

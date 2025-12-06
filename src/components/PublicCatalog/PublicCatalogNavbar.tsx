@@ -1,3 +1,6 @@
+import { useCatalogTheme } from "@context/CatalogThemeContext/useCatalogTheme";
+import CategoryPill from "./CategoryPill";
+import { getPillColors } from "@/utils/pillColors";
 import styles from "./PublicCatalog.module.scss";
 
 import type { BusinessCategory } from "@/types/database";
@@ -13,20 +16,22 @@ export default function PublicCatalogNavbar({
     activeCategory,
     onSelectCategory
 }: Props) {
+    const theme = useCatalogTheme();
+    const pillColors = getPillColors(theme.categoryPillColor);
+
     return (
-        <nav className={styles.navbar}>
+        <nav className={styles.navbar} style={{ backgroundColor: theme.headerBackground }}>
             <div className={styles.navbarInner}>
                 {/* Categorie */}
                 {categories.map(cat => (
-                    <button
+                    <CategoryPill
                         key={cat.id}
-                        className={`${styles.navItem} ${
-                            activeCategory === cat.id ? styles.navItemActive : ""
-                        }`}
+                        label={cat.name}
+                        isActive={activeCategory === cat.id}
+                        colors={pillColors}
+                        className={styles.navItem}
                         onClick={() => onSelectCategory(cat.id)}
-                    >
-                        {cat.name}
-                    </button>
+                    />
                 ))}
             </div>
         </nav>

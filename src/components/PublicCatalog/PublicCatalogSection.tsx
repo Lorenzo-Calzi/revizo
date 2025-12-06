@@ -1,7 +1,6 @@
-import styles from "./PublicCatalog.module.scss";
-
 // import Text from "@components/ui/Text/Text";
 import PublicProductCard from "./PublicProductCard";
+import styles from "./PublicCatalog.module.scss";
 
 import type { BusinessCategory, BusinessItem } from "@/types/database";
 
