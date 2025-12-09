@@ -147,6 +147,40 @@ input[type="range"] {
   }
 }
 
+.subTabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.subTab {
+  flex: 1;
+  padding: 0.35rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid $gray-200;
+  background: $gray-100;
+  font-size: 0.8rem;
+  cursor: pointer;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+
+.subTabActive {
+  background: $brand-primary;
+  border-color: $brand-primary;
+  color: #fff;
+}
+
+.infoBox {
+  font-size: 0.85rem;
+  line-height: 1.4;
+  padding: 0.75rem;
+  border-radius: 8px;
+  background: $gray-100;
+  border: 1px dashed $gray-200;
+}
+
 /* SCROLLBAR ELEGANTE */
 .panel::-webkit-scrollbar {
   width: 6px;

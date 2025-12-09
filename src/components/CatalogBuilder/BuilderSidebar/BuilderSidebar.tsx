@@ -1,14 +1,35 @@
 import type { CatalogTheme } from "@/types/theme";
+import EditorCollectionsPanel from "../EditorCollectionsPanel/EditorCollectionsPanel";
+import type { FullCollection } from "@/types/database";
 import styles from "./BuilderSidebar.module.scss";
+
+type ContentMode = "collections" | "catalog";
 
 interface BuilderSidebarProps {
     theme: CatalogTheme;
     setTheme: React.Dispatch<React.SetStateAction<CatalogTheme>>;
-    tab: "content" | "style" | "catalog";
-    setTab: (t: "content" | "style" | "catalog") => void;
+    tab: "content" | "style";
+    setTab: (t: "content" | "style") => void;
+    businessId: string;
+    onCollectionSelect: (collectionData: FullCollection) => void;
+    contentMode: ContentMode;
+    setContentMode: (mode: ContentMode) => void;
+    activeCollectionId: string | null;
+    setActiveCollectionId: (id: string | null) => void;
 }
 
-export default function BuilderSidebar({ theme, setTheme, tab, setTab }: BuilderSidebarProps) {
+export default function BuilderSidebar({
+    theme,
+    setTheme,
+    tab,
+    setTab,
+    businessId,
+    onCollectionSelect,
+    contentMode,
+    setContentMode,
+    activeCollectionId,
+    setActiveCollectionId
+}: BuilderSidebarProps) {
     // HEADER
     function handleHeaderChangeBgColor(color: string) {
         setTheme(prev => ({
@@ -23,6 +44,7 @@ export default function BuilderSidebar({ theme, setTheme, tab, setTab }: Builder
             heroRadius: radius
         }));
     }
+
     // CATEGORIE
     function handleCategoryPillChangeBgColor(color: string) {
         setTheme(prev => ({
@@ -69,8 +91,10 @@ export default function BuilderSidebar({ theme, setTheme, tab, setTab }: Builder
 
     return (
         <div className={styles.sidebar}>
+            {/* TAB PRINCIPALI */}
             <div className={styles.tabs}>
                 <button
+                    type="button"
                     className={tab === "content" ? styles.active : ""}
                     onClick={() => setTab("content")}
                 >
@@ -78,6 +102,7 @@ export default function BuilderSidebar({ theme, setTheme, tab, setTab }: Builder
                 </button>
 
                 <button
+                    type="button"
                     className={tab === "style" ? styles.active : ""}
                     onClick={() => setTab("style")}
                 >
@@ -86,7 +111,51 @@ export default function BuilderSidebar({ theme, setTheme, tab, setTab }: Builder
             </div>
 
             <div className={styles.panel}>
-                {tab === "content" && <p>Impostazioni contenuto…</p>}
+                {/* CONTENUTO: sottotab Catalogo / Gruppi di contenuti */}
+                {tab === "content" && (
+                    <>
+                        <div className={styles.subTabs} aria-label="Modalità contenuto">
+                            <button
+                                type="button"
+                                className={`${styles.subTab} ${
+                                    contentMode === "catalog" ? styles.subTabActive : ""
+                                }`}
+                                onClick={() => setContentMode("catalog")}
+                            >
+                                Catalogo
+                            </button>
+                            <button
+                                type="button"
+                                className={`${styles.subTab} ${
+                                    contentMode === "collections" ? styles.subTabActive : ""
+                                }`}
+                                onClick={() => setContentMode("collections")}
+                            >
+                                Gruppi di contenuti
+                            </button>
+                        </div>
+
+                        {contentMode === "collections" && (
+                            <EditorCollectionsPanel
+                                businessId={businessId}
+                                onSelectCollection={onCollectionSelect}
+                                activeCollectionId={activeCollectionId}
+                                setActiveCollectionId={setActiveCollectionId}
+                            />
+                        )}
+
+                        {contentMode === "catalog" && (
+                            <div className={styles.infoBox}>
+                                <p>
+                                    Nella vista centrale puoi creare categorie e elementi del
+                                    catalogo per questa attività.
+                                </p>
+                            </div>
+                        )}
+                    </>
+                )}
+
+                {/* STILE */}
                 {tab === "style" && (
                     <div className={styles.sections}>
                         <section className={styles.section}>
@@ -113,6 +182,7 @@ export default function BuilderSidebar({ theme, setTheme, tab, setTab }: Builder
                                 />
                             </div>
                         </section>
+
                         <section className={styles.section}>
                             <h3 className={styles.sectionTitle}>Categorie</h3>
 
@@ -126,10 +196,11 @@ export default function BuilderSidebar({ theme, setTheme, tab, setTab }: Builder
                                 />
                             </div>
                         </section>
+
                         <section className={styles.section}>
                             <h3 className={styles.sectionTitle}>Card prodotto</h3>
 
-                            {/* 1. TEMPLATE */}
+                            {/* Template */}
                             <div className={styles.field}>
                                 <label className={styles.label}>Template</label>
                                 <div className={styles.pillGroup}>
@@ -167,7 +238,7 @@ export default function BuilderSidebar({ theme, setTheme, tab, setTab }: Builder
                                 </div>
                             </div>
 
-                            {/* 2. BACKGROUND COLOR */}
+                            {/* Background */}
                             <div className={styles.field}>
                                 <label className={styles.label}>Colore di sfondo</label>
                                 <input
@@ -178,7 +249,7 @@ export default function BuilderSidebar({ theme, setTheme, tab, setTab }: Builder
                                 />
                             </div>
 
-                            {/* 3. TEXT COLOR */}
+                            {/* Testo */}
                             <div className={styles.field}>
                                 <label className={styles.label}>Colore testi</label>
                                 <input
@@ -189,9 +260,9 @@ export default function BuilderSidebar({ theme, setTheme, tab, setTab }: Builder
                                 />
                             </div>
 
-                            {/* 4. BORDER RADIUS */}
+                            {/* Radius card */}
                             <div className={styles.field}>
-                                <label className={styles.label}>Bordo (radius)</label>
+                                <label className={styles.label}>Bordo card (radius)</label>
                                 <input
                                     type="range"
                                     min={0}
@@ -201,8 +272,9 @@ export default function BuilderSidebar({ theme, setTheme, tab, setTab }: Builder
                                 />
                             </div>
 
+                            {/* Radius immagine */}
                             <div className={styles.field}>
-                                <label className={styles.label}>Bordo item (radius)</label>
+                                <label className={styles.label}>Bordo immagine (radius)</label>
                                 <input
                                     type="range"
                                     min={0}

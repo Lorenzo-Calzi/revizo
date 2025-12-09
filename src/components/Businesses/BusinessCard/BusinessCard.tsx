@@ -2,14 +2,13 @@ import React, { useState } from "react";
 import ConfirmModal from "@/components/ui/ConfirmModal/ConfirmModal";
 import Text from "@components/ui/Text/Text";
 import { QRCodeSVG } from "qrcode.react";
-import styles from "./BusinessCard.module.scss";
 import type { BusinessCardProps } from "@/types/Businesses";
+import styles from "./BusinessCard.module.scss";
 
 export const BusinessCard: React.FC<BusinessCardProps> = ({
     business,
     onEdit,
     onDelete,
-    onOpenCatalog,
     onOpenEditor,
     onOpenReviews
 }) => {
@@ -100,11 +99,7 @@ export const BusinessCard: React.FC<BusinessCardProps> = ({
 
                 {/* ACTIONS */}
                 <div className={styles.actions}>
-                    <button className={styles.primary} onClick={() => onOpenCatalog(business.id)}>
-                        Menù
-                    </button>
-
-                    <button className={styles.secondary} onClick={() => onOpenEditor(business.id)}>
+                    <button className={styles.primary} onClick={() => onOpenEditor(business.id)}>
                         Editor
                     </button>
 

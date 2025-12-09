@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { useAuth } from "@context/useAuth";
 import { useTheme } from "@/context/Theme/useTheme";
-import Text from "@components/ui/Text/Text";
-import styles from "./Customization.module.scss";
 import Profile from "@/components/Profile/Profile";
+import Text from "@components/ui/Text/Text";
+import styles from "./Settings.module.scss";
 
-export default function Customization() {
+export default function Settings() {
     const { user } = useAuth();
     const { theme, toggleTheme } = useTheme();
     const [language, setLanguage] = useState("it");

@@ -307,11 +307,6 @@ export default function Businesses() {
     // ======================================
     // CALLBACK: navigazione lista
     // ======================================
-    const handleOpenCatalog = useCallback(
-        (id: string) => navigate(`/dashboard/catalog?businessId=${id}`),
-        [navigate]
-    );
-
     const handleOpenEditor = useCallback(
         (id: string) => navigate(`/dashboard/business/${id}/editor`),
         [navigate]
@@ -596,7 +591,6 @@ export default function Businesses() {
                     businesses={businesses}
                     onEdit={handleEditClick}
                     onDelete={handleDelete}
-                    onOpenCatalog={handleOpenCatalog}
                     onOpenEditor={handleOpenEditor}
                     onOpenReviews={handleOpenReviews}
                 />

@@ -8,7 +8,6 @@ export const BusinessList: React.FC<BusinessListProps> = ({
     businesses,
     onEdit,
     onDelete,
-    onOpenCatalog,
     onOpenEditor,
     onOpenReviews
 }) => {
@@ -33,7 +32,6 @@ export const BusinessList: React.FC<BusinessListProps> = ({
                     business={business}
                     onEdit={onEdit}
                     onDelete={onDelete}
-                    onOpenCatalog={onOpenCatalog}
                     onOpenEditor={onOpenEditor}
                     onOpenReviews={onOpenReviews}
                 />

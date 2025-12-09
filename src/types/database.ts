@@ -55,6 +55,7 @@ export interface Business {
     type: BusinessType;
     cover_image: string | null;
     theme: CatalogTheme | null;
+    active_collection_id: string | null;
     created_at: string;
     updated_at: string;
 }
@@ -81,3 +82,55 @@ export interface BusinessItem {
     visible: boolean;
     created_at: string;
 }
+
+export type RawCategoryRow = {
+    id: string;
+    order_index: number;
+    category: BusinessCategory | BusinessCategory[] | null;
+};
+
+export type RawItemRow = {
+    id: string;
+    order_index: number;
+    category_id: string;
+    item: BusinessItem | BusinessItem[] | null;
+};
+
+export type Collection = {
+    id: string;
+    business_id: string;
+    name: string;
+    description: string | null;
+    highlighted: boolean;
+    created_at: string;
+};
+
+export type CollectionCategory = {
+    id: string;
+    collection_id: string;
+    category_id: string;
+    order_index: number;
+};
+
+export type CollectionItem = {
+    id: string;
+    collection_id: string;
+    item_id: string;
+    category_id: string;
+    order_index: number;
+};
+
+export type FullCollection = {
+    collection: Collection;
+    categories: {
+        id: string;
+        order_index: number;
+        category: BusinessCategory;
+    }[];
+    items: {
+        id: string;
+        order_index: number;
+        category_id: string;
+        item: BusinessItem;
+    }[];
+};

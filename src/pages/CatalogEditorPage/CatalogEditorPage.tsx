@@ -4,9 +4,9 @@ import { useEffect, useState } from "react";
 import BuilderLayout from "@components/CatalogBuilder/BuilderLayout/BuilderLayout";
 
 import { getBusinessById } from "@services/supabase/businesses";
-import { getBusinessCategories, getBusinessItemsByBusiness } from "@services/supabase/catalog";
+import { getBusinessItemsByBusiness } from "@services/supabase/catalog";
 
-import type { Business, BusinessCategory, BusinessItem } from "@/types/database";
+import type { Business, BusinessItem } from "@/types/database";
 
 // stesso shape usato dentro PublicCatalog
 type ItemsByCategory = Record<string, BusinessItem[]>;
@@ -15,8 +15,6 @@ export default function CatalogEditorPage() {
     const { businessId } = useParams<{ businessId: string }>();
 
     const [business, setBusiness] = useState<Business | null>(null);
-    const [categories, setCategories] = useState<BusinessCategory[]>([]);
-    const [itemsByCategory, setItemsByCategory] = useState<ItemsByCategory>({});
 
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -34,8 +32,6 @@ export default function CatalogEditorPage() {
                 setBusiness(data as Business);
 
                 // 2) Categorie
-                const cats = await getBusinessCategories(businessId);
-                setCategories(cats);
 
                 // 3) Tutti gli item del business
                 const allItems = await getBusinessItemsByBusiness(businessId);
@@ -47,8 +43,6 @@ export default function CatalogEditorPage() {
                     if (!grouped[cid]) grouped[cid] = [];
                     grouped[cid].push(item);
                 }
-
-                setItemsByCategory(grouped);
             } catch (err) {
                 console.error(err);
                 setError("Errore nel caricamento del catalogo");
@@ -76,12 +70,5 @@ export default function CatalogEditorPage() {
         return <p>Nessun business trovato.</p>;
     }
 
-    return (
-        <BuilderLayout
-            business={business}
-            categories={categories}
-            items={itemsByCategory}
-            initialTheme={business.theme ?? null}
-        />
-    );
+    return <BuilderLayout business={business} initialTheme={business.theme ?? null} />;
 }

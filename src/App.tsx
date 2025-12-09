@@ -12,10 +12,9 @@ import UpdatePassword from "./pages/Auth/UpdatePassword";
 // Dashboard pages
 import Overview from "@pages/Dashboard/Overview/Overview";
 import Businesses from "./pages/Dashboard/Businesses/Businesses";
-import Catalog from "@pages/Dashboard/Catalog/Catalog";
 import Reviews from "@pages/Dashboard/Reviews/Reviews";
 import Analytics from "@pages/Dashboard/Analytics/Analytics";
-import Customization from "@pages/Dashboard/Settings/Customization/Customization";
+import Settings from "@/pages/Dashboard/Settings/Settings";
 
 // Catalog Editor
 import CatalogEditorPage from "./pages/CatalogEditorPage/CatalogEditorPage";
@@ -52,18 +51,13 @@ export default function App() {
             >
                 <Route index element={<Overview />} />
 
-                {/* New: Le tue attività */}
                 <Route path="businesses" element={<Businesses />} />
 
-                <Route path="catalog" element={<Catalog />} />
                 <Route path="reviews" element={<Reviews />} />
+
                 <Route path="analytics" element={<Analytics />} />
 
-                {/* Settings */}
-                <Route path="settings">
-                    <Route index element={<Customization />} />
-                    <Route path="theme" element={<Customization />} />
-                </Route>
+                <Route path="settings" element={<Settings />} />
             </Route>
 
             {/* Redirect for legacy route */}

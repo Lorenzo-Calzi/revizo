@@ -132,3 +132,21 @@ export async function updateBusinessTheme(businessId: string, theme: CatalogThem
 
     if (error) throw error;
 }
+
+export async function updateBusinessSettings(
+    businessId: string,
+    settings: {
+        theme?: CatalogTheme;
+        activeCollectionId?: string | null;
+    }
+) {
+    const { error } = await supabase
+        .from("businesses")
+        .update({
+            theme: settings.theme,
+            active_collection_id: settings.activeCollectionId
+        })
+        .eq("id", businessId);
+
+    if (error) throw error;
+}

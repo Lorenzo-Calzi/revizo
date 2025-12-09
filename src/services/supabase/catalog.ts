@@ -150,3 +150,25 @@ export async function deleteBusinessItem(itemId: string): Promise<void> {
 
     if (error) throw error;
 }
+
+export async function getAllBusinessCategories(businessId: string): Promise<BusinessCategory[]> {
+    const { data, error } = await supabase
+        .from("business_categories")
+        .select("*")
+        .eq("business_id", businessId)
+        .order("order_index", { ascending: true });
+
+    if (error) throw error;
+    return data ?? [];
+}
+
+export async function getAllBusinessItems(businessId: string): Promise<BusinessItem[]> {
+    const { data, error } = await supabase
+        .from("business_items")
+        .select("*, business_categories!inner(business_id)")
+        .eq("business_categories.business_id", businessId)
+        .order("order_index", { ascending: true });
+
+    if (error) throw error;
+    return data ?? [];
+}

@@ -53,7 +53,7 @@ export default function RestaurantCatalog({
 
     return (
         <section className={styles.catalog}>
-            <Text variant="title-lg">Menu ristorante</Text>
+            <Text variant="title-lg">Catalogo</Text>
 
             {/* Add category */}
             <div className={styles.addCatForm}>

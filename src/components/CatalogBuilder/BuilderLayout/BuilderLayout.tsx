@@ -3,29 +3,47 @@ import BuilderToolbar from "../BuilderToolbar/BuilderToolbar";
 import BuilderSidebar from "../BuilderSidebar/BuilderSidebar";
 import BuilderPreviewFrame from "../BuilderPreviewFrame/BuilderPreviewFrame";
 import { useToast } from "@/context/Toast/ToastContext";
-import type { Business, BusinessCategory, BusinessItem } from "@/types/database";
-import { updateBusinessTheme } from "@services/supabase/businesses";
+import type { Business, FullCollection } from "@/types/database";
+import { updateBusinessSettings } from "@services/supabase/businesses";
 import type { CatalogTheme } from "@/types/theme";
 import { defaultTheme } from "@/constants/catalogTheme";
+import CollectionEditor from "../CollectionEditor/CollectionEditor";
+import Text from "@/components/ui/Text/Text";
 import styles from "./BuilderLayout.module.scss";
-
-type ItemsByCategory = Record<string, BusinessItem[]>;
+import Catalog from "@/components/CatalogBuilder/Catalog/Catalog";
 
 interface BuilderLayoutProps {
     business: Business;
-    categories: BusinessCategory[];
-    items: ItemsByCategory;
     initialTheme: CatalogTheme | null;
 }
 
-export default function BuilderLayout({
-    business,
-    categories,
-    items,
-    initialTheme
-}: BuilderLayoutProps) {
+interface PreviewItem {
+    id: string;
+    name: string;
+    description?: string;
+    price?: number;
+    image?: string;
+}
+
+interface PreviewCategory {
+    id: string;
+    name: string;
+    items: PreviewItem[];
+}
+
+interface PreviewData {
+    id: string;
+    name: string;
+    categories: PreviewCategory[];
+}
+
+type ContentMode = "collections" | "catalog";
+
+export default function BuilderLayout({ business, initialTheme }: BuilderLayoutProps) {
     const [mode, setMode] = useState<"mobile" | "tablet" | "desktop">("mobile");
-    const [tab, setTab] = useState<"content" | "style" | "catalog">("content");
+    const [tab, setTab] = useState<"content" | "style">("content");
+    const [contentMode, setContentMode] = useState<ContentMode>("catalog");
+
     const [saving, setSaving] = useState(false);
     const [isDirty, setIsDirty] = useState(false);
     const { showToast } = useToast();
@@ -33,7 +51,11 @@ export default function BuilderLayout({
     const [lastSavedTheme, setLastSavedTheme] = useState<CatalogTheme>(
         initialTheme ?? defaultTheme
     );
+    const [selectedCollection, setSelectedCollection] = useState<FullCollection | null>(null);
+    const [activeCollectionId, setActiveCollectionId] = useState<string | null>(null);
+    const [previewData, setPreviewData] = useState<PreviewData | null>(null);
 
+    // sincronizza tema iniziale
     useEffect(() => {
         if (initialTheme) {
             setTheme(initialTheme);
@@ -46,11 +68,23 @@ export default function BuilderLayout({
         }
     }, [initialTheme]);
 
+    // rileva modifiche non salvate
     useEffect(() => {
         const hasChanges = JSON.stringify(theme) !== JSON.stringify(lastSavedTheme);
         setIsDirty(hasChanges);
     }, [theme, lastSavedTheme]);
 
+    // aggiorna la preview quando cambia il menu attivo
+    useEffect(() => {
+        if (!activeCollectionId || !selectedCollection) return;
+
+        if (selectedCollection.collection.id === activeCollectionId) {
+            // previewData è aggiornata direttamente da CollectionEditor
+            setPreviewData(prev => prev);
+        }
+    }, [activeCollectionId, selectedCollection]);
+
+    // warning se ci sono modifiche non salvate
     useEffect(() => {
         if (!isDirty) return;
 
@@ -66,26 +100,33 @@ export default function BuilderLayout({
         };
     }, [isDirty]);
 
+    useEffect(() => {
+        setIsDirty(true);
+    }, [activeCollectionId]);
+
     async function handleSave() {
-        if (saving) return; // evita doppi click
+        if (saving) return;
 
         try {
             setSaving(true);
-            await updateBusinessTheme(business.id, theme);
 
-            // aggiorniamo lo snapshot dell'ultimo stato salvato
+            await updateBusinessSettings(business.id, {
+                theme,
+                activeCollectionId
+            });
+
             setLastSavedTheme(theme);
             setIsDirty(false);
 
             showToast({
-                message: "Stile salvato con successo!",
+                message: "Modifiche salvate con successo!",
                 type: "success",
                 duration: 2500
             });
         } catch (err) {
             console.error(err);
             showToast({
-                message: "Errore durante il salvataggio dello stile.",
+                message: "Errore durante il salvataggio.",
                 type: "error"
             });
         } finally {
@@ -97,6 +138,7 @@ export default function BuilderLayout({
         <div className={styles.builder}>
             <BuilderToolbar
                 mode={mode}
+                tab={tab}
                 setMode={setMode}
                 onSave={handleSave}
                 saving={saving}
@@ -104,15 +146,54 @@ export default function BuilderLayout({
             />
 
             <div className={styles.main}>
-                <BuilderSidebar theme={theme} setTheme={setTheme} tab={tab} setTab={setTab} />
-
-                <BuilderPreviewFrame
-                    mode={mode}
-                    business={business}
-                    categories={categories}
-                    items={items}
+                <BuilderSidebar
+                    businessId={business.id}
                     theme={theme}
+                    setTheme={setTheme}
+                    tab={tab}
+                    setTab={setTab}
+                    onCollectionSelect={setSelectedCollection}
+                    contentMode={contentMode}
+                    setContentMode={setContentMode}
+                    activeCollectionId={activeCollectionId}
+                    setActiveCollectionId={setActiveCollectionId}
                 />
+
+                {/* PREVIEW STILE */}
+                {tab === "style" && (
+                    <BuilderPreviewFrame
+                        mode={mode}
+                        business={business}
+                        preview={previewData}
+                        theme={theme}
+                    />
+                )}
+
+                {/* CONTENUTO: 2 modalità */}
+                {tab === "content" && contentMode === "catalog" && (
+                    <div className={styles.catalogPanelWrapper}>
+                        <Catalog business={business} />
+                    </div>
+                )}
+
+                {tab === "content" && contentMode === "collections" && (
+                    <>
+                        {selectedCollection ? (
+                            <CollectionEditor
+                                data={selectedCollection}
+                                onPreviewUpdate={data => {
+                                    if (selectedCollection?.collection.id === activeCollectionId) {
+                                        setPreviewData(data);
+                                    }
+                                }}
+                            />
+                        ) : (
+                            <div style={{ padding: "1rem" }}>
+                                <Text>Seleziona un gruppo di contenuti per iniziare.</Text>
+                            </div>
+                        )}
+                    </>
+                )}
             </div>
         </div>
     );
