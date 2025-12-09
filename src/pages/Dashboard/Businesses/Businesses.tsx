@@ -555,7 +555,20 @@ export default function Businesses() {
                         onFieldChange={handleCreateFieldChange}
                         onCoverChange={handleCreateCoverChange}
                         onSubmit={handleAdd}
-                        onCancel={() => setIsFormOpen(false)}
+                        onCancel={() => {
+                            setIsFormOpen(false);
+                            setCreateErrors({});
+                            setCreateForm({
+                                name: "",
+                                city: "",
+                                address: "",
+                                slug: "",
+                                type: "restaurant",
+                                coverPreview: null
+                            });
+                            setCreateCoverFile(null);
+                            setCreateSlugTouched(false);
+                        }}
                         loading={isCreating}
                         previewBaseUrl={previewBaseUrl}
                     />
@@ -576,6 +589,7 @@ export default function Businesses() {
                     setEditingId(null);
                     setEditForm(null);
                     setEditCoverFile(null);
+                    setEditErrors({});
                 }}
             />
 

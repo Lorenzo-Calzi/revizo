@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import ConfirmModal from "@/components/ui/ConfirmModal/ConfirmModal";
 import Text from "@components/ui/Text/Text";
 import { QRCodeSVG } from "qrcode.react";
+import { MoreVertical } from "lucide-react";
 import type { BusinessCardProps } from "@/types/Businesses";
 import styles from "./BusinessCard.module.scss";
 
@@ -14,43 +15,53 @@ export const BusinessCard: React.FC<BusinessCardProps> = ({
 }) => {
     const publicUrl = `${window.location.origin}/business/${business.slug}`;
 
-    // Stato modale QR
     const [showQrModal, setShowQrModal] = useState(false);
+    const [showMenu, setShowMenu] = useState(false);
 
-    // Funzione per scaricare il QR code in PNG
+    const menuRef = useRef<HTMLDivElement | null>(null);
+
+    /* ==============================
+       CLICK OUTSIDE PER CHIUDERE MENU
+    =============================== */
+    useEffect(() => {
+        function handleClickOutside(e: MouseEvent) {
+            if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+                setShowMenu(false);
+            }
+        }
+
+        if (showMenu) document.addEventListener("mousedown", handleClickOutside);
+
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, [showMenu]);
+
+    /* ==============================
+       DOWNLOAD QR
+    =============================== */
     function downloadQrAsPng() {
         const el = document.getElementById("qr-download");
 
-        if (!(el instanceof SVGSVGElement)) {
-            console.error("QR element is not an SVG!");
-            return;
-        }
+        if (!(el instanceof SVGSVGElement)) return;
 
-        const svg = el;
-
-        const xml = new XMLSerializer().serializeToString(svg);
+        const xml = new XMLSerializer().serializeToString(el);
         const svg64 = btoa(xml);
-        const image64 = `data:image/svg+xml;base64,${svg64}`;
-
         const img = new Image();
-        img.src = image64;
+        img.src = `data:image/svg+xml;base64,${svg64}`;
 
         img.onload = () => {
             const canvas = document.createElement("canvas");
-            const size = 2000; // alta qualità stampa
+            const size = 2000;
             canvas.width = size;
             canvas.height = size;
 
             const ctx = canvas.getContext("2d");
             if (!ctx) return;
 
-            ctx.fillStyle = "#ffffff";
+            ctx.fillStyle = "#fff";
             ctx.fillRect(0, 0, size, size);
-
             ctx.drawImage(img, 0, 0, size, size);
 
             const pngFile = canvas.toDataURL("image/png");
-
             const link = document.createElement("a");
             link.href = pngFile;
             link.download = `qr-${business.slug}.png`;
@@ -71,8 +82,9 @@ export const BusinessCard: React.FC<BusinessCardProps> = ({
                         )}
                     </div>
 
-                    {/* Info testo */}
+                    {/* INFO TESTO */}
                     <div className={styles.info}>
+                        {/* ROW TITOLO + MENU ⋮ */}
                         <Text as="h3" variant="title-sm" weight={600}>
                             {business.name}
                         </Text>
@@ -91,7 +103,7 @@ export const BusinessCard: React.FC<BusinessCardProps> = ({
                         </a>
                     </div>
 
-                    {/* QR (in alto a destra) */}
+                    {/* QR */}
                     <div className={styles.qrWrapper} onClick={() => setShowQrModal(true)}>
                         <QRCodeSVG value={publicUrl} bgColor="#f8f9fb" fgColor="#000000" />
                     </div>
@@ -99,21 +111,50 @@ export const BusinessCard: React.FC<BusinessCardProps> = ({
 
                 {/* ACTIONS */}
                 <div className={styles.actions}>
-                    <button className={styles.primary} onClick={() => onOpenEditor(business.id)}>
-                        Editor
-                    </button>
+                    <div className={styles.actionsLeft}>
+                        <button
+                            className={styles.primary}
+                            onClick={() => onOpenEditor(business.id)}
+                        >
+                            Editor
+                        </button>
 
-                    <button className={styles.secondary} onClick={() => onOpenReviews(business.id)}>
-                        Recensioni
-                    </button>
+                        <button
+                            className={styles.secondary}
+                            onClick={() => onOpenReviews(business.id)}
+                        >
+                            Recensioni
+                        </button>
+                    </div>
 
-                    <button className={styles.ghost} onClick={() => onEdit(business)}>
-                        Modifica
-                    </button>
+                    <div className={styles.actionsRight} ref={menuRef}>
+                        <button className={styles.moreButton} onClick={() => setShowMenu(v => !v)}>
+                            <MoreVertical size={18} />
+                        </button>
 
-                    <button className={styles.danger} onClick={() => onDelete(business.id)}>
-                        Elimina
-                    </button>
+                        {showMenu && (
+                            <div className={styles.dropdownMenu}>
+                                <button
+                                    onClick={() => {
+                                        onEdit(business);
+                                        setShowMenu(false);
+                                    }}
+                                >
+                                    Modifica
+                                </button>
+
+                                <button
+                                    className={styles.dangerItem}
+                                    onClick={() => {
+                                        onDelete(business.id);
+                                        setShowMenu(false);
+                                    }}
+                                >
+                                    Elimina
+                                </button>
+                            </div>
+                        )}
+                    </div>
                 </div>
             </article>
 
@@ -121,19 +162,12 @@ export const BusinessCard: React.FC<BusinessCardProps> = ({
             <ConfirmModal
                 isOpen={showQrModal}
                 title="QR code dell’attività"
-                description="Scansiona o scarica il QR code per accedere alla pagina pubblica."
+                description="Scansiona o scarica il QR code."
                 confirmLabel="Chiudi"
                 onConfirm={() => setShowQrModal(false)}
             >
                 <div style={{ textAlign: "center", marginBottom: "1rem" }}>
-                    <QRCodeSVG
-                        id="qr-download"
-                        value={publicUrl}
-                        size={240}
-                        bgColor="#ffffff"
-                        fgColor="#000000"
-                    />
-
+                    <QRCodeSVG id="qr-download" value={publicUrl} size={240} />
                     <button
                         style={{
                             marginTop: "1rem",

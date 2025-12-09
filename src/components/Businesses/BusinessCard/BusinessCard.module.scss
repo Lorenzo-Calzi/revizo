@@ -81,7 +81,35 @@
 .actions {
   display: flex;
   flex-wrap: wrap;
+  justify-content: space-between;
   gap: 0.6rem;
+}
+
+.actionsLeft {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.actionsRight {
+  position: relative; // serve per il dropdown
+  display: flex;
+  align-items: center;
+  justify-self: end;
+}
+
+.moreButton {
+  background: transparent;
+  border: none;
+  padding: 6px;
+  cursor: pointer;
+  opacity: 0.7;
+  border-radius: 6px;
+
+  &:hover {
+    opacity: 1;
+    background: var(--hover-bg, #f3f4f6);
+  }
 }
 
 button {
@@ -145,5 +173,71 @@ button {
 
   .thumbnail {
     width: 100%;
+  }
+}
+
+/* ============================
+   TITLE ROW + MENU ⋮
+============================ */
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative; // serve per posizionare il menu
+}
+
+.moreButton {
+  background: transparent;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  opacity: 0.6;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover {
+    opacity: 1;
+    background: var(--hover-bg, #f3f4f6);
+  }
+}
+
+/* Dropdown */
+.dropdownMenu {
+  position: absolute;
+  top: 28px;
+  right: 0;
+  width: 140px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  padding: 0.25rem;
+  display: flex;
+  flex-direction: column;
+  z-index: 50;
+
+  button {
+    width: 100%;
+    padding: 0.6rem 0.9rem;
+    border: none;
+    background: none;
+    text-align: left;
+    font-size: 0.9rem;
+    cursor: pointer;
+
+    &:hover {
+      background: var(--hover-bg, #f3f4f6);
+    }
+  }
+}
+
+.dangerItem {
+  color: #b91c1c;
+
+  &:hover {
+    background: #fee2e2 !important;
   }
 }

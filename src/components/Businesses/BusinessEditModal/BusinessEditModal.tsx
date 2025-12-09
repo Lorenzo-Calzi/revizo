@@ -87,7 +87,9 @@ export const BusinessEditModal: React.FC<Props> = ({
     return (
         <div
             className={`${styles.overlay} ${closing ? styles.fadeOut : ""}`}
-            onClick={handleSafeClose}
+            onMouseDown={e => {
+                if (e.target === e.currentTarget) handleSafeClose();
+            }}
             role="dialog"
             aria-modal="true"
         >
