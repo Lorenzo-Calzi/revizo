@@ -131,7 +131,7 @@ export default function BuilderSidebar({
                                 }`}
                                 onClick={() => setContentMode("collections")}
                             >
-                                Gruppi di contenuti
+                                Menu
                             </button>
                         </div>
 

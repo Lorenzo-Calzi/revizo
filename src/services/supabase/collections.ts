@@ -1,4 +1,5 @@
 import {
+    Business,
     Collection,
     CollectionCategory,
     CollectionItem,
@@ -99,6 +100,57 @@ export async function addCategoryToCollection(collectionId: string, categoryId: 
     return data as CollectionCategory;
 }
 
+/* ============================
+   HIGHLIGHTED (MENÙ IN EVIDENZA)
+============================ */
+
+export async function setExclusiveHighlighted(
+    businessId: string,
+    collectionId: string | null
+): Promise<void> {
+    // Se collectionId è null → rimuoviamo solo l'evidenza da tutti
+    if (!collectionId) {
+        const { error } = await supabase
+            .from("collections")
+            .update({ highlighted: false })
+            .eq("business_id", businessId);
+
+        if (error) throw error;
+        return;
+    }
+
+    // 1) Rimuoviamo l'evidenza da tutte le altre
+    const { error: resetErr } = await supabase
+        .from("collections")
+        .update({ highlighted: false })
+        .eq("business_id", businessId);
+
+    if (resetErr) throw resetErr;
+
+    // 2) Impostiamo quella scelta come evidenziata
+    const { error: setErr } = await supabase
+        .from("collections")
+        .update({ highlighted: true })
+        .eq("id", collectionId);
+
+    if (setErr) throw setErr;
+}
+
+export async function getHighlightedCollectionForBusiness(
+    businessId: string
+): Promise<Collection | null> {
+    const { data, error } = await supabase
+        .from("collections")
+        .select("*")
+        .eq("business_id", businessId)
+        .eq("highlighted", true)
+        .maybeSingle();
+
+    if (error) throw error;
+
+    return (data as Collection) ?? null;
+}
+
 export async function removeCategoryFromCollection(collectionId: string, categoryId: string) {
     const { error } = await supabase
         .from("collection_categories")
@@ -142,7 +194,8 @@ export async function addItemToCollection(
         .insert({
             collection_id: collectionId,
             item_id: itemId,
-            category_id: categoryId
+            category_id: categoryId,
+            visible: true
         })
         .select()
         .single();
@@ -175,6 +228,21 @@ export async function reorderCollectionItems(collectionId: string, orderedItemId
 
     if (error) throw error;
     return true;
+}
+
+export async function setCollectionItemVisibility(
+    collectionItemId: string,
+    visible: boolean
+): Promise<CollectionItem> {
+    const { data, error } = await supabase
+        .from("collection_items")
+        .update({ visible })
+        .eq("id", collectionItemId)
+        .select()
+        .single();
+
+    if (error) throw error;
+    return data as CollectionItem;
 }
 
 /* ============================
@@ -214,6 +282,7 @@ export async function getFullCollection(collectionId: string): Promise<FullColle
             id,
             order_index,
             category_id,
+            visible,
             item:business_items(*)
         `
         )
@@ -252,7 +321,8 @@ export async function getFullCollection(collectionId: string): Promise<FullColle
                 id: row.id,
                 order_index: row.order_index,
                 category_id: row.category_id,
-                item: rawItem
+                item: rawItem,
+                visible: row.visible ?? true
             };
         })
         .filter(Boolean) as FullCollection["items"];
@@ -307,6 +377,7 @@ export async function getPublicCollection(collectionId: string) {
             `
             category_id,
             order_index,
+            visible,
             item:business_items (
                 id,
                 name,
@@ -325,6 +396,9 @@ export async function getPublicCollection(collectionId: string) {
     const itemsByCategory: Record<string, PublicItem[]> = {};
 
     for (const row of itemRows) {
+        // se non è visibile, lo saltiamo
+        if (row.visible === false) continue;
+
         const rawItem = Array.isArray(row.item) ? row.item[0] : row.item;
         if (!rawItem) continue;
 
@@ -345,4 +419,90 @@ export async function getPublicCollection(collectionId: string) {
         categories: categories.sort((a, b) => a.order_index - b.order_index),
         items: itemsByCategory
     };
+}
+
+/* ============================
+   MENÙ PUBBLICI PER IL BUSINESS
+   (PRINCIPALE + EVENTUALE SPECIALE)
+============================ */
+
+export async function getPublicMenusForBusiness(business: Business) {
+    const mainId = business.active_collection_id;
+
+    // se non c'è menù principale, non mostriamo nulla
+    if (!mainId) {
+        return {
+            main: null as Awaited<ReturnType<typeof getPublicCollection>> | null,
+            highlighted: null as Awaited<ReturnType<typeof getPublicCollection>> | null
+        };
+    }
+
+    // Menù principale
+    const main = await getPublicCollection(mainId);
+
+    // Menù speciale (se esiste e diverso dal principale)
+    const highlightedCollection = await getHighlightedCollectionForBusiness(business.id);
+
+    let highlighted: Awaited<ReturnType<typeof getPublicCollection>> | null = null;
+
+    if (highlightedCollection && highlightedCollection.id !== mainId) {
+        highlighted = await getPublicCollection(highlightedCollection.id);
+    }
+
+    return { main, highlighted };
+}
+
+type PublicCollectionResult = Awaited<ReturnType<typeof getPublicCollection>>;
+
+/**
+ * Combina menù principale + eventuale menù speciale
+ * in un unico set di categorie + items per il catalogo pubblico.
+ *
+ * - Le categorie del menù speciale vengono prima
+ * - Le categorie del menù principale vengono dopo
+ * - Per evitare collisioni di ID, aggiungiamo un prefix
+ */
+export function buildCombinedPublicCollection(
+    main: PublicCollectionResult | null,
+    highlighted: PublicCollectionResult | null
+) {
+    const categories: { id: string; name: string; order_index: number }[] = [];
+    const items: Record<string, PublicItem[]> = {};
+
+    // 1) Menù speciale (se presente)
+    if (highlighted) {
+        highlighted.categories.forEach(cat => {
+            const newId = `highlighted-${cat.id}`;
+
+            categories.push({
+                id: newId,
+                name: `⭐ ${cat.name} (Menù del giorno)`,
+                order_index: cat.order_index ?? 0
+            });
+
+            const catItems = highlighted.items[cat.id] ?? [];
+            items[newId] = catItems;
+        });
+    }
+
+    // 2) Menù principale (se presente)
+    if (main) {
+        main.categories.forEach(cat => {
+            const newId = `main-${cat.id}`;
+
+            categories.push({
+                id: newId,
+                name: cat.name,
+                order_index: cat.order_index ?? 0
+            });
+
+            const catItems = main.items[cat.id] ?? [];
+            items[newId] = catItems;
+        });
+    }
+
+    // Ordine finale per sicurezza
+    categories.sort((a, b) => a.order_index - b.order_index);
+
+    return { categories, items };
 }

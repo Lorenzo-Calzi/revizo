@@ -10,7 +10,8 @@ import {
     addCategoryToCollection,
     addItemToCollection,
     removeCategoryFromCollection,
-    removeItemFromCollection
+    removeItemFromCollection,
+    setCollectionItemVisibility
 } from "@/services/supabase/collections";
 
 // NEW IMPORTS
@@ -41,6 +42,12 @@ interface PreviewData {
 interface CollectionEditorProps {
     data: FullCollection;
     onPreviewUpdate?: (preview: PreviewData) => void;
+}
+
+interface UiCollectionItem {
+    entryId: string;
+    data: BusinessItem;
+    visible: boolean;
 }
 
 export default function CollectionEditor({ data, onPreviewUpdate }: CollectionEditorProps) {
@@ -106,7 +113,8 @@ export default function CollectionEditor({ data, onPreviewUpdate }: CollectionEd
                                     name: i.item.name,
                                     description: i.item.description ?? undefined,
                                     price: i.item.price ?? undefined,
-                                    image: i.item.image ?? undefined
+                                    image: i.item.image ?? undefined,
+                                    visible: i.visible !== false
                                 }))
                         }
                     ];
@@ -146,17 +154,20 @@ export default function CollectionEditor({ data, onPreviewUpdate }: CollectionEd
     }, [previewData, onPreviewUpdate]);
 
     // Item per la categoria attiva
-    const itemsForActiveCategory: BusinessItem[] = useMemo(() => {
+    const itemsForActiveCategory: UiCollectionItem[] = useMemo(() => {
         if (!activeCategoryId) return [];
 
-        // item che esistono ancora nel catalogo
         const existingItemIds = new Set(allItems.map(i => i.id));
 
         return data.items
             .filter(
                 i => i.category_id === activeCategoryId && i.item && existingItemIds.has(i.item.id)
             )
-            .map(i => i.item as BusinessItem);
+            .map(i => ({
+                entryId: i.id, // <-- id della riga collection_items
+                data: i.item as BusinessItem,
+                visible: i.visible !== false // default true se undefined
+            }));
     }, [data.items, activeCategoryId, allItems]);
 
     const activeCategoryName = useMemo(() => {
@@ -196,7 +207,8 @@ export default function CollectionEditor({ data, onPreviewUpdate }: CollectionEd
             id: crypto.randomUUID(),
             order_index: itemsForActiveCategory.length,
             category_id: activeCategoryId,
-            item: itemObj
+            item: itemObj,
+            visible: true
         };
 
         data.items = [...data.items, newEntry];
@@ -224,6 +236,16 @@ export default function CollectionEditor({ data, onPreviewUpdate }: CollectionEd
         setAllItems([...allItems]);
     }
 
+    async function handleToggleItemVisibility(entryId: string, visible: boolean) {
+        await setCollectionItemVisibility(entryId, visible);
+
+        // aggiorna i dati nella collection
+        data.items = data.items.map(it => (it.id === entryId ? { ...it, visible } : it));
+
+        // forza re-render
+        setAllItems([...allItems]);
+    }
+
     // -------------------------------------------------
     // RENDER
     // -------------------------------------------------
@@ -233,7 +255,7 @@ export default function CollectionEditor({ data, onPreviewUpdate }: CollectionEd
             {/* HEADER */}
             <header className={styles.header}>
                 <div className={styles.headerInfo}>
-                    <Text as="h3" weight={600}>
+                    <Text variant="title-md" as="h3" weight={600}>
                         {collection.name}
                     </Text>
 
@@ -266,22 +288,25 @@ export default function CollectionEditor({ data, onPreviewUpdate }: CollectionEd
                 </aside>
 
                 {/* COLONNA ITEMS */}
-                <main className={styles.itemsColumn}>
-                    <CollectionItems
-                        items={itemsForActiveCategory}
-                        categoryName={activeCategoryName}
-                        availableItems={availableItems}
-                        activeCategoryId={activeCategoryId!} // certo che non è null qui
-                        onAddItem={categoryId => {
-                            const categoryObj = categories.find(c => c.id === categoryId);
-                            if (!categoryObj) return;
+                {activeCategoryName && (
+                    <main className={styles.itemsColumn}>
+                        <CollectionItems
+                            items={itemsForActiveCategory}
+                            categoryName={activeCategoryName}
+                            availableItems={availableItems}
+                            activeCategoryId={activeCategoryId!}
+                            onAddItem={categoryId => {
+                                const categoryObj = categories.find(c => c.id === categoryId);
+                                if (!categoryObj) return;
 
-                            setSelectedCategoryForItems(categoryObj);
-                            setDrawerItemsOpen(true);
-                        }}
-                        onRemoveItem={handleRemoveItem}
-                    />
-                </main>
+                                setSelectedCategoryForItems(categoryObj);
+                                setDrawerItemsOpen(true);
+                            }}
+                            onRemoveItem={handleRemoveItem}
+                            onToggleVisibility={handleToggleItemVisibility}
+                        />
+                    </main>
+                )}
             </div>
 
             {/* -------------------------------------- */}

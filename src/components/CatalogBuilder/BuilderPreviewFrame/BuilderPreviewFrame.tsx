@@ -18,6 +18,7 @@ interface BuilderPreviewFrameProps {
                 description?: string;
                 price?: number;
                 image?: string;
+                visible?: boolean;
             }>;
         }>;
     } | null;
@@ -39,7 +40,11 @@ export default function BuilderPreviewFrame({
     // ---------------------------------------------
     // CATEGORIES (preview → BusinessCategory[])
     // ---------------------------------------------
-    const categories: BusinessCategory[] = preview.categories.map(cat => ({
+    const filteredCategories = preview.categories.filter(cat =>
+        cat.items.some(item => item.visible !== false)
+    );
+
+    const categories: BusinessCategory[] = filteredCategories.map(cat => ({
         id: cat.id,
         business_id: business.id,
         name: cat.name,
@@ -54,7 +59,9 @@ export default function BuilderPreviewFrame({
     const items: ItemsByCategory = {};
 
     preview.categories.forEach(cat => {
-        items[cat.id] = cat.items.map(item => ({
+        const visibleItems = cat.items.filter(item => item.visible !== false);
+
+        items[cat.id] = visibleItems.map(item => ({
             id: item.id,
             category_id: cat.id,
             name: item.name,
@@ -64,7 +71,7 @@ export default function BuilderPreviewFrame({
             duration: null,
             image: item.image ?? null,
             order_index: 0,
-            visible: true,
+            visible: item.visible !== false,
             created_at: "preview"
         }));
     });

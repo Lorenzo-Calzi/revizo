@@ -71,6 +71,8 @@ export default function PublicCatalog({ business, categories, items, theme }: Pu
         return () => window.removeEventListener("scroll", handleScroll);
     }, [categories]);
 
+    const visibleCategories = categories.filter(cat => (items[cat.id] ?? []).length > 0);
+
     return (
         <CatalogThemeProvider theme={theme}>
             <div className={styles.page}>
@@ -116,7 +118,7 @@ export default function PublicCatalog({ business, categories, items, theme }: Pu
 
                 {/* CONTENT */}
                 <main className={styles.content}>
-                    {categories.map(cat => (
+                    {visibleCategories.map(cat => (
                         <div
                             key={cat.id}
                             ref={el => {

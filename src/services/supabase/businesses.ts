@@ -150,3 +150,18 @@ export async function updateBusinessSettings(
 
     if (error) throw error;
 }
+
+export async function setActiveSpecialCollection(
+    businessId: string,
+    collectionId: string | null
+): Promise<Business> {
+    const { data, error } = await supabase
+        .from("businesses")
+        .update({ active_special_collection_id: collectionId })
+        .eq("id", businessId)
+        .select()
+        .single();
+
+    if (error) throw error;
+    return data as Business;
+}

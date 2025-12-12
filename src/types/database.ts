@@ -56,6 +56,7 @@ export interface Business {
     cover_image: string | null;
     theme: CatalogTheme | null;
     active_collection_id: string | null;
+    active_special_collection_id: string | null;
     created_at: string;
     updated_at: string;
 }
@@ -94,6 +95,7 @@ export type RawItemRow = {
     order_index: number;
     category_id: string;
     item: BusinessItem | BusinessItem[] | null;
+    visible: boolean | null;
 };
 
 export type Collection = {
@@ -118,6 +120,7 @@ export type CollectionItem = {
     item_id: string;
     category_id: string;
     order_index: number;
+    visible: boolean;
 };
 
 export type FullCollection = {
@@ -132,5 +135,6 @@ export type FullCollection = {
         order_index: number;
         category_id: string;
         item: BusinessItem;
+        visible: boolean;
     }[];
 };

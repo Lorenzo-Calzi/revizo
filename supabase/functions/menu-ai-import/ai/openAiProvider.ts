@@ -17,7 +17,7 @@ export const openAiMenuProvider: MenuAiProvider = {
                 {
                     role: "system",
                     content:
-                        "Sei un parser professionale di menù. Restituisci SOLO JSON valido, nessun testo aggiuntivo."
+                        "Sei un parser professionale di menu. Restituisci SOLO JSON valido, nessun testo aggiuntivo."
                 },
                 {
                     role: "user",
@@ -25,7 +25,7 @@ export const openAiMenuProvider: MenuAiProvider = {
                         {
                             type: "text",
                             text: `
-Analizza questo menù e produci un JSON nel formato:
+Analizza questo menu e produci un JSON nel formato:
 
 {
   "language": "it",

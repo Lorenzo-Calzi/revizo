@@ -1,78 +1,96 @@
 import Text from "@/components/ui/Text/Text";
 import type { BusinessItem } from "@/types/database";
 import styles from "./CollectionEditor.module.scss";
+import { Eye, EyeOff } from "lucide-react";
+
+interface UiCollectionItem {
+    entryId: string;
+    data: BusinessItem;
+    visible: boolean;
+}
 
 interface CollectionItemsProps {
-    items: BusinessItem[];
+    items: UiCollectionItem[];
     categoryName?: string;
     availableItems: BusinessItem[];
-
-    // PRIMA: onAddItem: () => void
-    // ORA:
-    onAddItem: (categoryId: string) => void;
-
-    onRemoveItem: (id: string) => void;
-
-    // NEW: passa anche l'id della categoria attiva
     activeCategoryId: string;
+
+    onAddItem: (categoryId: string) => void;
+    onRemoveItem: (id: string) => void;
+    onToggleVisibility: (entryId: string, visible: boolean) => void;
 }
 
 export default function CollectionItems({
     items,
     categoryName,
     availableItems,
+    activeCategoryId,
     onAddItem,
     onRemoveItem,
-    activeCategoryId
+    onToggleVisibility
 }: CollectionItemsProps) {
     return (
-        <div>
-            {/* HEADER */}
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                {categoryName && (
-                    <Text as="h4" weight={600}>
-                        Elementi in “{categoryName}”
-                    </Text>
-                )}
+        <section className={styles.section}>
+            <div className={styles.sectionHeader}>
+                <Text as="h4" weight={600}>
+                    Elementi in “{categoryName}”
+                </Text>
 
                 {!!availableItems.length && (
                     <button
-                        type="button"
-                        className={styles.addButton}
+                        className={styles.sectionAddBtn}
                         onClick={() => onAddItem(activeCategoryId)}
                     >
-                        + Aggiungi
+                        +
                     </button>
                 )}
             </div>
 
-            {/* EMPTY STATE */}
             {items.length === 0 ? (
-                <div className={styles.emptyState}>
-                    <Text as="p">Nessun elemento presente in questa categoria.</Text>
+                <div className={styles.emptyBox}>
+                    <Text as="span" weight={500}>
+                        Nessun elemento associato.
+                    </Text>
                 </div>
             ) : (
                 <div className={styles.itemsList}>
                     {items.map(item => (
-                        <article key={item.id} className={styles.itemCard}>
-                            <div className={styles.itemHeader}>
-                                <Text as="h5" weight={600}>
-                                    {item.name}
+                        <div key={item.entryId} className={styles.itemCard}>
+                            <div className={styles.itemMain}>
+                                <Text as="span" weight={500}>
+                                    {item.data.name}
                                 </Text>
 
-                                <button
-                                    type="button"
-                                    className={styles.removeItemButton}
-                                    aria-label={`Rimuovi ${item.name}`}
-                                    onClick={() => onRemoveItem(item.id)}
-                                >
-                                    ✕
-                                </button>
+                                {/* SWITCH */}
+                                <label className={styles.switchLabel}>
+                                    <input
+                                        type="checkbox"
+                                        checked={item.visible}
+                                        onChange={e =>
+                                            onToggleVisibility(item.entryId, e.target.checked)
+                                        }
+                                    />
+
+                                    <span className={styles.switchTrack}>
+                                        <span className={styles.switchThumb} />
+                                    </span>
+
+                                    {item.visible ? <Eye size={17} /> : <EyeOff size={17} />}
+                                </label>
                             </div>
-                        </article>
+
+                            <button
+                                type="button"
+                                className={styles.cardRemove}
+                                aria-label={`Rimuovi ${item.data.name}`}
+                                onClick={() => onRemoveItem(item.data.id)}
+                            >
+                                ✕
+                            </button>
+                        </div>
                     ))}
                 </div>
             )}
-        </div>
+        </section>
     );
 }

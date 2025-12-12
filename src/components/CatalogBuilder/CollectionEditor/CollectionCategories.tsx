@@ -23,61 +23,55 @@ export default function CollectionCategories({
     onRemoveCategory
 }: CollectionCategoriesProps) {
     return (
-        <div>
-            {/* Header */}
-            <div className={styles.header}>
+        <section className={styles.section}>
+            <div className={styles.sectionHeader}>
                 <Text as="h4" weight={600}>
                     Categorie
                 </Text>
 
                 {!!availableCategories.length && onAddCategory && (
-                    <button
-                        type="button"
-                        className={styles.addButton}
-                        onClick={() => onAddCategory()}
-                    >
-                        + Aggiungi
+                    <button className={styles.sectionAddBtn} onClick={onAddCategory}>
+                        +
                     </button>
                 )}
             </div>
 
-            {/* Stato vuoto */}
             {categories.length === 0 ? (
-                <div className={styles.emptyState}>
-                    <Text as="p">Nessuna categoria ancora associata a questo gruppo.</Text>
+                <div className={styles.emptyBox}>
+                    <Text weight={500}>Nessuna categoria associata.</Text>
                 </div>
             ) : (
-                <div className={styles.categoryList} role="list">
-                    {categories.map(category => (
-                        <div key={category.id} className={styles.categoryRow}>
-                            <button
-                                type="button"
-                                className={`${styles.categoryButton} ${
-                                    activeCategoryId === category.id
-                                        ? styles.categoryButtonActive
-                                        : ""
+                <div className={styles.categoryList}>
+                    {categories.map(category => {
+                        const isActive = activeCategoryId === category.id;
+
+                        return (
+                            <div
+                                key={category.id}
+                                className={`${styles.categoryCard} ${
+                                    isActive ? styles.categoryCardActive : ""
                                 }`}
                                 onClick={() => onSelectCategory(category.id)}
-                                aria-pressed={activeCategoryId === category.id}
-                                role="listitem"
                             >
-                                <Text as="span">{category.name}</Text>
-                            </button>
+                                <Text weight={500}>{category.name}</Text>
 
-                            {onRemoveCategory && (
-                                <button
-                                    type="button"
-                                    className={styles.removeButton}
-                                    aria-label={`Rimuovi categoria ${category.name}`}
-                                    onClick={() => onRemoveCategory(category.id)}
-                                >
-                                    ✕
-                                </button>
-                            )}
-                        </div>
-                    ))}
+                                {onRemoveCategory && (
+                                    <button
+                                        className={styles.cardRemove}
+                                        onClick={e => {
+                                            e.stopPropagation();
+                                            onRemoveCategory(category.id);
+                                        }}
+                                        aria-label={`Rimuovi categoria ${category.name}`}
+                                    >
+                                        ✕
+                                    </button>
+                                )}
+                            </div>
+                        );
+                    })}
                 </div>
             )}
-        </div>
+        </section>
     );
 }

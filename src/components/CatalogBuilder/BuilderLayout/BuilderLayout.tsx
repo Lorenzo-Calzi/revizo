@@ -11,6 +11,7 @@ import CollectionEditor from "../CollectionEditor/CollectionEditor";
 import Text from "@/components/ui/Text/Text";
 import styles from "./BuilderLayout.module.scss";
 import Catalog from "@/components/CatalogBuilder/Catalog/Catalog";
+import { getFullCollection } from "@/services/supabase/collections";
 
 interface BuilderLayoutProps {
     business: Business;
@@ -103,6 +104,34 @@ export default function BuilderLayout({ business, initialTheme }: BuilderLayoutP
     useEffect(() => {
         setIsDirty(true);
     }, [activeCollectionId]);
+
+    // Imposta la collection attiva quando carico l'editor
+    useEffect(() => {
+        if (business?.active_collection_id) {
+            setActiveCollectionId(business.active_collection_id);
+        } else {
+            setActiveCollectionId(null);
+        }
+    }, [business?.active_collection_id]);
+
+    useEffect(() => {
+        async function init() {
+            // 1. Abbiamo già un menu attivo salvato nel business
+            if (activeCollectionId) {
+                const full = await getFullCollection(activeCollectionId);
+                setSelectedCollection(full);
+                return;
+            }
+
+            // 2. Non c’è un menu attivo → usiamo il primo della sidebar (selezionato automaticamente)
+            if (selectedCollection === null && business.id) {
+                // la sidebar seleziona già il primo menu via handleSelect → dobbiamo solo aspettare
+                // qui NON facciamo altro, perché handleSelect verrà chiamato dalla sidebar
+            }
+        }
+
+        init();
+    }, [activeCollectionId, business.id]);
 
     async function handleSave() {
         if (saving) return;

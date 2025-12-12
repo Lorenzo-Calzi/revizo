@@ -1,186 +1,204 @@
 @use "@styles/variables" as *;
 @use "sass:color";
 
+/* ---------------------------------------------
+   WRAPPER GENERALE
+--------------------------------------------- */
 .wrapper {
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  padding: 1rem;
-  height: 100%;
+  padding: 1rem 0;
 }
 
-/* Header con nome collection e eventuali pill */
+/* ---------------------------------------------
+   HEADER
+--------------------------------------------- */
 .header {
   display: flex;
-  flex-wrap: wrap;
+  justify-content: space-between;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
 }
 
-.headerInfo {
+.addButton {
+  height: 20px;
+  width: 10px;
   display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.badges {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.badge {
-  padding: 0.15rem 0.5rem;
-  border-radius: 999px;
-  font-size: 0.75rem;
-  background: $gray-100;
-  color: $gray-500;
-}
-
-.badgePrimary {
-  background: $brand-primary;
-  color: $white;
-}
-
-/* Layout a due colonne (categorie + items) */
-.layout {
-  display: flex;
-  gap: 1rem;
-  align-items: flex-start;
-  min-height: 0;
-}
-
-/* Colonna categorie */
-.categoriesColumn {
-  width: 240px;
-  max-width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-/* Colonna items */
-.itemsColumn {
-  flex: 1;
-  min-width: 0;
-}
-
-/* Responsive: su schermi piccoli mettiamo in colonna */
-@media (max-width: 768px) {
-  .layout {
-    flex-direction: column;
-  }
-
-  .categoriesColumn {
-    width: 100%;
-    flex-direction: row;
-    flex-wrap: wrap;
-  }
-}
-
-/* LISTA CATEGORIE */
-.categoryList {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-}
-
-.categoryButton {
-  width: 100%;
-  text-align: left;
-  padding: 0.5rem 0.75rem;
-  border-radius: 999px;
-  border: 1px solid $gray-300;
-  background: $white;
-  cursor: pointer;
-  font-size: 0.9rem;
-  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
-
-  &:hover {
-    background: $gray-100;
-  }
-
-  &:focus-visible {
-    outline: 2px solid $brand-primary;
-    outline-offset: 2px;
-  }
-}
-
-.categoryButtonActive {
-  border-color: $brand-primary;
-  color: $white;
-}
-
-/* LISTA ITEMS */
-.itemsList {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.itemCard {
-  padding: 0.75rem 0.85rem;
-  border-radius: 8px;
-  border: 1px solid $gray-300;
-  background: $white;
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.itemHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 0.5rem;
-}
-
-.itemMeta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-  font-size: 0.8rem;
-  color: $gray-500;
-}
-
-.itemTag {
-  padding: 0.1rem 0.4rem;
-  border-radius: 999px;
-  background: $gray-100;
-}
-
-/* Stato vuoto */
-.emptyState {
+  align-items: center;
+  justify-content: center;
   padding: 1rem;
   border-radius: 8px;
-  background: $gray-100;
-  border: 1px dashed $gray-300;
+  background: $brand-primary;
+  color: $white;
+  font-size: 0.85rem;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s;
+
+  &:hover {
+    background: color.scale($brand-primary, $lightness: -10%);
+  }
 }
 
-.categoryRow {
+/* ---------------------------------------------
+   TITOLI DI SEZIONE
+--------------------------------------------- */
+.sectionTitle {
+  text-transform: uppercase;
+}
+
+/* Separatore */
+.separator {
+  border: none;
+  border-bottom: 1px solid $gray-300;
+  opacity: 0.8;
+  margin: 0.5rem 0;
+}
+
+/* ---------------------------------------------
+   LISTA GRUPPI
+--------------------------------------------- */
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+}
+
+/* ---------------------------------------------
+   CARD GRUPPO
+--------------------------------------------- */
+.itemRow {
+  background: $white;
+  border: 1px solid $gray-200;
+  border-radius: 14px;
+  padding: 1.1rem 1.3rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  cursor: pointer;
+
+  &:hover {
+    border-color: $gray-300;
+  }
+
+  &.active {
+    border-color: $brand-primary;
+    box-shadow: 0 0 0 3px rgba($brand-primary, 0.18);
+  }
+}
+
+/* ---------------------------------------------
+   ROW TOP → Nome + Stellina
+--------------------------------------------- */
+.rowTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.starBadge {
+  font-size: 1.25rem;
+  line-height: 1;
+  color: $brand-primary;
   display: flex;
   align-items: center;
-  gap: 0.35rem;
 }
 
-.removeButton,
-.removeItemButton {
-  background: transparent;
-  border: none;
-  color: $gray-500;
+/* ---------------------------------------------
+   ROW BOTTOM
+--------------------------------------------- */
+.rowBottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Lato sinistro → Usa / In uso */
+.leftSide {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.inUseBadge {
+  background: $brand-primary;
+  color: $white;
+  padding: 0.35rem 1rem;
+  border-radius: 999px;
   font-size: 0.85rem;
-  padding: 0.25rem;
+}
+
+.useButton {
+  background: $white;
+  border: 1px solid $gray-300;
+  padding: 0.35rem 1rem;
+  border-radius: 8px;
   cursor: pointer;
-  border-radius: 4px;
-  transition: background 0.2s ease;
+  font-size: 0.85rem;
+  transition: background 0.15s, border-color 0.15s;
 
   &:hover {
     background: $gray-100;
+    border-color: $gray-400;
   }
+}
 
-  &:focus-visible {
-    outline: 2px solid $brand-primary;
-    outline-offset: 2px;
+/* ---------------------------------------------
+   Pulsante "Usa come speciale"
+--------------------------------------------- */
+.specialButton {
+  border: 1px solid $brand-primary;
+  padding: 0.35rem 1rem;
+  border-radius: 8px;
+  color: $brand-primary;
+  background: transparent;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: background 0.15s ease, color 0.15s ease;
+
+  &:hover {
+    background: rgba($brand-primary, 0.1);
   }
+}
+
+/* ---------------------------------------------
+   Lato destro (edit + delete)
+--------------------------------------------- */
+.rightSide {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.iconButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.35rem;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: $gray-600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+
+  &:hover {
+    background: $gray-100;
+    color: $gray-800;
+  }
+}
+
+/* ---------------------------------------------
+   EMPTY STATE
+--------------------------------------------- */
+.empty {
+  padding: 1rem;
+  border-radius: 12px;
+  background: $gray-100;
+  color: $gray-600;
+  border: 1px dashed $gray-300;
+  text-align: center;
 }
