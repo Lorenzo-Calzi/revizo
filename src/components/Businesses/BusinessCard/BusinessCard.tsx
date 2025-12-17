@@ -1,6 +1,9 @@
 import React, { useState, useRef, useEffect } from "react";
 import ConfirmModal from "@/components/ui/ConfirmModal/ConfirmModal";
+import BusinessOverridesModal from "@/components/BusinessOverridesModal/BusinessOverridesModal";
 import Text from "@components/ui/Text/Text";
+import SelectCollectionModal from "../SelectCollectionModal/SelectCollectionModal";
+import BusinessPreviewModal from "../BusinessPreviewModal/BusinessPreviewModal";
 import { QRCodeSVG } from "qrcode.react";
 import { MoreVertical } from "lucide-react";
 import type { BusinessCardProps } from "@/types/Businesses";
@@ -17,6 +20,9 @@ export const BusinessCard: React.FC<BusinessCardProps> = ({
 
     const [showQrModal, setShowQrModal] = useState(false);
     const [showMenu, setShowMenu] = useState(false);
+    const [showSelectCollection, setShowSelectCollection] = useState(false);
+    const [showPreview, setShowPreview] = useState(false);
+    const [overrideOpen, setOverrideOpen] = useState(false);
 
     const menuRef = useRef<HTMLDivElement | null>(null);
 
@@ -119,6 +125,15 @@ export const BusinessCard: React.FC<BusinessCardProps> = ({
                             Editor
                         </button>
 
+                        {business.active_collection_id && (
+                            <button
+                                className={styles.primary}
+                                onClick={() => setOverrideOpen(true)}
+                            >
+                                Gestisci disponibilità e prezzi
+                            </button>
+                        )}
+
                         <button
                             className={styles.secondary}
                             onClick={() => onOpenReviews(business.id)}
@@ -134,6 +149,24 @@ export const BusinessCard: React.FC<BusinessCardProps> = ({
 
                         {showMenu && (
                             <div className={styles.dropdownMenu}>
+                                <button
+                                    onClick={() => {
+                                        setShowSelectCollection(true);
+                                        setShowMenu(false);
+                                    }}
+                                >
+                                    Seleziona collezione
+                                </button>
+
+                                <button
+                                    onClick={() => {
+                                        setShowPreview(true);
+                                        setShowMenu(false);
+                                    }}
+                                >
+                                    Anteprima sito
+                                </button>
+
                                 <button
                                     onClick={() => {
                                         onEdit(business);
@@ -184,6 +217,36 @@ export const BusinessCard: React.FC<BusinessCardProps> = ({
                     </button>
                 </div>
             </ConfirmModal>
+
+            {overrideOpen && business.active_collection_id && (
+                <BusinessOverridesModal
+                    isOpen={overrideOpen}
+                    onClose={() => setOverrideOpen(false)}
+                    businessId={business.id}
+                    collectionId={business.active_collection_id}
+                    title={`Gestisci disponibilità e prezzi — ${business.name}`}
+                />
+            )}
+
+            {/* MODALE SELEZIONE COLLEZIONE */}
+            <SelectCollectionModal
+                isOpen={showSelectCollection}
+                businessId={business.id}
+                activeCollectionId={business.active_collection_id}
+                onClose={() => setShowSelectCollection(false)}
+                onUpdated={() => {
+                    // per ora chiudiamo solo la modale
+                    // (lo stato globale dei business verrà riallineato dal parent)
+                    setShowSelectCollection(false);
+                }}
+            />
+
+            {/* MODALE ANTEPRIMA SITO */}
+            <BusinessPreviewModal
+                isOpen={showPreview}
+                business={business}
+                onClose={() => setShowPreview(false)}
+            />
         </>
     );
 };

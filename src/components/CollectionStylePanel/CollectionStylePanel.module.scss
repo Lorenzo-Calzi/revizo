@@ -1,0 +1,21 @@
+.styleGroup {
+  margin-top: 12px;
+  display: grid;
+  gap: 10px;
+}
+
+.colorRow {
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  gap: 10px;
+  align-items: center;
+}
+
+.colorInput {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 10px;
+  background: transparent;
+}

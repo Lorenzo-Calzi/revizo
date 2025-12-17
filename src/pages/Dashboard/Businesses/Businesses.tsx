@@ -5,8 +5,8 @@ import {
     getUserBusinesses,
     addBusiness,
     deleteBusiness,
-    updateBusiness,
-    uploadBusinessCover
+    updateBusiness
+    // uploadBusinessCover
 } from "@services/supabase/businesses";
 
 import Text from "@components/ui/Text/Text";
@@ -240,9 +240,9 @@ export default function Businesses() {
                     createForm.type
                 );
 
-                if (createCoverFile) {
-                    await uploadBusinessCover(newBusiness.id, createCoverFile);
-                }
+                // if (createCoverFile) {
+                //     await uploadBusinessCover(newBusiness.id, createCoverFile);
+                // }
 
                 // reset
                 setCreateForm({
@@ -435,9 +435,9 @@ export default function Businesses() {
                     type: editForm.type
                 });
 
-                if (editCoverFile) {
-                    await uploadBusinessCover(editingId, editCoverFile);
-                }
+                // if (editCoverFile) {
+                //     await uploadBusinessCover(editingId, editCoverFile);
+                // }
 
                 // RESET
                 setIsEditOpen(false);

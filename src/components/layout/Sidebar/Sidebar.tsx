@@ -4,6 +4,7 @@ import { NavLink } from "react-router-dom";
 import {
     LayoutDashboard,
     Store,
+    ScrollText,
     MessageSquare,
     ChartNoAxesCombined,
     Settings,
@@ -14,6 +15,7 @@ import styles from "./Sidebar.module.scss";
 const links = [
     { to: "/dashboard", label: "Panoramica", icon: <LayoutDashboard /> },
     { to: "/dashboard/businesses", label: "Le tue attività", icon: <Store /> },
+    { to: "/dashboard/collections", label: "Le tue collezioni", icon: <ScrollText /> },
     { to: "/dashboard/reviews", label: "Recensioni", icon: <MessageSquare /> },
     { to: "/dashboard/analytics", label: "Analytics", icon: <ChartNoAxesCombined /> },
     { to: "/dashboard/settings", label: "Impostazioni", icon: <Settings /> }

@@ -19,3 +19,21 @@ export async function uploadBusinessItemImage(businessId: string, file: File): P
 
     return data.publicUrl;
 }
+
+export async function uploadCatalogItemImage(itemId: string, file: File): Promise<string> {
+    const ext = file.name.split(".").pop() || "jpg";
+    const fileName = `${itemId}.${ext}`;
+
+    const { error } = await supabase.storage.from("catalog-items").upload(fileName, file, {
+        upsert: true,
+        contentType: file.type
+    });
+
+    if (error) throw error;
+
+    const {
+        data: { publicUrl }
+    } = supabase.storage.from("catalog-items").getPublicUrl(fileName);
+
+    return publicUrl;
+}

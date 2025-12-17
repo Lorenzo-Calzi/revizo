@@ -1,12 +1,8 @@
 import type { CatalogTheme } from "@/types/theme";
-export interface Feedback {
-    id: string;
-    user_id: string;
-    customer_name: string;
-    comment: string;
-    rating: number;
-    created_at: string;
-}
+
+/* ============================
+   GENERIC TYPES
+============================ */
 
 export interface User {
     id: string;
@@ -36,6 +32,10 @@ export interface Review {
     tags?: string[];
 }
 
+/* ============================
+   BUSINESS
+============================ */
+
 export type BusinessType =
     | "restaurant"
     | "bar"
@@ -60,6 +60,11 @@ export interface Business {
     created_at: string;
     updated_at: string;
 }
+
+/* ============================
+   ⚠️ LEGACY TYPES (DO NOT USE)
+   To be removed after migration
+============================ */
 
 export interface BusinessCategory {
     id: string;
@@ -98,43 +103,90 @@ export type RawItemRow = {
     visible: boolean | null;
 };
 
-export type Collection = {
+/* ============================
+   ✅ NEW DOMAIN TYPES
+============================ */
+
+export interface Item {
     id: string;
-    business_id: string;
     name: string;
     description: string | null;
-    highlighted: boolean;
+    base_price: number | null;
+    duration: number | null;
+    metadata: {
+        image?: string | null;
+        allergens?: string[];
+    } | null;
     created_at: string;
-};
+    updated_at: string;
+}
 
-export type CollectionCategory = {
+export interface Collection {
+    id: string;
+    name: string;
+    description: string | null;
+    collection_type: string;
+    style: Record<string, unknown> | null;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface CollectionSection {
     id: string;
     collection_id: string;
-    category_id: string;
+    name: string;
     order_index: number;
-};
+}
 
-export type CollectionItem = {
+export interface CollectionItem {
     id: string;
     collection_id: string;
+    section_id: string | null;
     item_id: string;
-    category_id: string;
     order_index: number;
     visible: boolean;
-};
+}
 
-export type FullCollection = {
-    collection: Collection;
-    categories: {
-        id: string;
-        order_index: number;
-        category: BusinessCategory;
-    }[];
-    items: {
-        id: string;
-        order_index: number;
-        category_id: string;
-        item: BusinessItem;
-        visible: boolean;
-    }[];
-};
+export interface BusinessCollection {
+    id: string;
+    business_id: string;
+    collection_id: string;
+    is_active: boolean;
+    order_index: number;
+    created_at: string;
+}
+
+export interface BusinessCollectionItemOverride {
+    id: string;
+    business_id: string;
+    collection_id: string;
+    item_id: string;
+    price_override: number | null;
+    visible_override: boolean | null;
+    updated_at: string;
+}
+
+export interface BusinessItemOverride {
+    id: string;
+    business_id: string;
+    item_id: string;
+    price_override: number | null;
+    visible_override: boolean | null;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface CollectionItemWithItem {
+    id: string;
+    collection_id: string;
+    section_id: string | null;
+    order_index: number;
+    visible: boolean;
+    item: Item;
+}
+
+export interface OverrideRowForUI {
+    item_id: string;
+    price_override: number | null;
+    visible_override: boolean | null;
+}

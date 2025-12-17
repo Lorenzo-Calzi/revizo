@@ -12,15 +12,16 @@ import UpdatePassword from "./pages/Auth/UpdatePassword";
 // Dashboard pages
 import Overview from "@pages/Dashboard/Overview/Overview";
 import Businesses from "./pages/Dashboard/Businesses/Businesses";
+import Collections from "./pages/Dashboard/Collections/Collections";
 import Reviews from "@pages/Dashboard/Reviews/Reviews";
 import Analytics from "@pages/Dashboard/Analytics/Analytics";
 import Settings from "@/pages/Dashboard/Settings/Settings";
 
 // Catalog Editor
-import CatalogEditorPage from "./pages/CatalogEditorPage/CatalogEditorPage";
+// import CatalogEditorPage from "./pages/CatalogEditorPage/CatalogEditorPage";
 
 // Public pages
-import PublicCatalogPage from "./pages/PublicCatalog/PublicCatalogPage";
+// import PublicCatalogPage from "./pages/PublicCatalog/PublicCatalogPage";
 import Home from "./pages/Home/Home";
 
 export default function App() {
@@ -28,7 +29,7 @@ export default function App() {
         <Routes>
             {/* Public routes */}
             <Route path="/" element={<Home />} />
-            <Route path="/business/:slug" element={<PublicCatalogPage />} />
+            {/* <Route path="/business/:slug" element={<PublicCatalogPage />} /> */}
 
             {/* Auth routes */}
             <Route path="/login" element={<Login />} />
@@ -38,7 +39,7 @@ export default function App() {
             <Route path="/update-password" element={<UpdatePassword />} />
 
             {/* Catalog editor (protected but outside dashboard nav) */}
-            <Route path="/dashboard/business/:businessId/editor" element={<CatalogEditorPage />} />
+            {/* <Route path="/dashboard/business/:businessId/editor" element={<CatalogEditorPage />} /> */}
 
             {/* Private dashboard area */}
             <Route
@@ -52,6 +53,8 @@ export default function App() {
                 <Route index element={<Overview />} />
 
                 <Route path="businesses" element={<Businesses />} />
+
+                <Route path="collections" element={<Collections />} />
 
                 <Route path="reviews" element={<Reviews />} />
 
