@@ -73,3 +73,35 @@
     color: #f87171;
   }
 }
+
+/* INPUT WRAPPER ----------------------------------- */
+.inputWrapper {
+  position: relative;
+}
+
+/* ACTION ICON ------------------------------------- */
+.inputAction {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 4px;
+  border-radius: 6px;
+  border: none;
+  background: none;
+
+  color: var(--text-muted, #94a3b8);
+  cursor: pointer;
+
+  transition: color 0.15s ease, background 0.15s ease;
+
+  &:hover {
+    color: var(--brand-primary, #6366f1);
+    background: rgba(0, 0, 0, 0.05);
+  }
+}

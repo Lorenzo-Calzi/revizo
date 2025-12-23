@@ -4,18 +4,18 @@ import { NavLink } from "react-router-dom";
 import {
     LayoutDashboard,
     Store,
-    ScrollText,
     MessageSquare,
     ChartNoAxesCombined,
     Settings,
-    X
+    X,
+    LibraryBig
 } from "lucide-react";
 import styles from "./Sidebar.module.scss";
 
 const links = [
     { to: "/dashboard", label: "Panoramica", icon: <LayoutDashboard /> },
     { to: "/dashboard/businesses", label: "Le tue attività", icon: <Store /> },
-    { to: "/dashboard/collections", label: "Le tue collezioni", icon: <ScrollText /> },
+    { to: "/dashboard/collections", label: "Le tue collezioni", icon: <LibraryBig /> },
     { to: "/dashboard/reviews", label: "Recensioni", icon: <MessageSquare /> },
     { to: "/dashboard/analytics", label: "Analytics", icon: <ChartNoAxesCombined /> },
     { to: "/dashboard/settings", label: "Impostazioni", icon: <Settings /> }
@@ -35,7 +35,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             <div className={styles.logo}>
                 <a href="/">
                     <Text variant="title-md" as={"h1"} colorVariant="primary" align="center">
-                        Revizo
+                        CataloGlobe
                     </Text>
                 </a>
 

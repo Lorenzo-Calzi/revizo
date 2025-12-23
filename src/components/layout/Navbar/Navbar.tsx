@@ -12,7 +12,8 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
 
     const pageTitles: Record<string, string> = {
         "/dashboard": "Panoramica",
-        "/dashboard/profile": "Profilo",
+        "/dashboard/businesses": "Le tue attività",
+        "/dashboard/collections": "Collezioni",
         "/dashboard/reviews": "Recensioni",
         "/dashboard/analytics": "Analytics",
         "/dashboard/settings": "Impostazioni"

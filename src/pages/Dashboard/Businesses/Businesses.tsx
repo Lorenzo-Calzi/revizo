@@ -307,10 +307,6 @@ export default function Businesses() {
     // ======================================
     // CALLBACK: navigazione lista
     // ======================================
-    const handleOpenEditor = useCallback(
-        (id: string) => navigate(`/dashboard/business/${id}/editor`),
-        [navigate]
-    );
 
     const handleOpenReviews = useCallback(
         (id: string) => navigate(`/dashboard/reviews?businessId=${id}`),
@@ -524,10 +520,6 @@ export default function Businesses() {
         <section className={styles.businesses} aria-labelledby="businesses-title">
             <header className={styles.header}>
                 <div className={styles.headerLeft}>
-                    <Text as="h1" variant="title-md" weight={600}>
-                        Le tue attività
-                    </Text>
-
                     <Text variant="body" colorVariant="muted">
                         Gestisci le tue attività e genera il QR del sito pubblico.
                     </Text>
@@ -605,7 +597,6 @@ export default function Businesses() {
                     businesses={businesses}
                     onEdit={handleEditClick}
                     onDelete={handleDelete}
-                    onOpenEditor={handleOpenEditor}
                     onOpenReviews={handleOpenReviews}
                 />
             )}

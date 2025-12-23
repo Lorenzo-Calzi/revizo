@@ -9,7 +9,7 @@ export const Footer = ({ shortDescription = false }: FooterProps) => {
     return (
         <footer className={styles.footer}>
             <Text variant="caption" colorVariant="muted">
-                © {new Date().getFullYear()} Revizo
+                © {new Date().getFullYear()} CataloGlobe
                 {!shortDescription && "— Tutti i diritti riservati."}
             </Text>
         </footer>

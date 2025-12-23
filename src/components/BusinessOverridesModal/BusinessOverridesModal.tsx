@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Text from "@/components/ui/Text/Text";
 import { Button } from "../ui";
 import { Input } from "../ui";
@@ -10,6 +10,7 @@ import {
 } from "@/services/supabase/overrides";
 
 import type { CollectionItemWithItem, OverrideRowForUI } from "@/types/database";
+import { Eye, EyeOff, X } from "lucide-react";
 import styles from "./BusinessOverridesModal.module.scss";
 
 type Props = {
@@ -42,8 +43,6 @@ export default function BusinessOverridesModal({
     const [items, setItems] = useState<CollectionItemWithItem[]>([]);
     const [overridesMap, setOverridesMap] = useState<Record<string, OverrideRowForUI>>({});
     const [drafts, setDrafts] = useState<Record<string, DraftRow>>({});
-
-    const itemIds = useMemo(() => items.map(r => r.item.id), [items]);
 
     const buildDrafts = useCallback(
         (rows: CollectionItemWithItem[], ov: Record<string, OverrideRowForUI>) => {
@@ -196,7 +195,7 @@ export default function BusinessOverridesModal({
                     </Text>
 
                     <button className={styles.close} onClick={onClose} aria-label="Chiudi">
-                        ×
+                        <X />
                     </button>
                 </div>
 
@@ -229,7 +228,7 @@ export default function BusinessOverridesModal({
                                                     : "Mostra contenuto"
                                             }
                                         >
-                                            {d.visible ? "👁" : "🚫"}
+                                            {d.visible ? <Eye size={15} /> : <EyeOff size={15} />}
                                         </button>
 
                                         <div className={styles.info}>

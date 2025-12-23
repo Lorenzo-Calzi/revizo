@@ -37,7 +37,7 @@ export default function CollectionPreviewFrame({ mode, children }: Props) {
             </div>
 
             <div className={styles.viewportOuter}>
-                <div className={styles.viewport} style={{ width }}>
+                <div className={`${styles.viewport} preview-${mode}`} style={{ width }}>
                     {children}
                 </div>
             </div>

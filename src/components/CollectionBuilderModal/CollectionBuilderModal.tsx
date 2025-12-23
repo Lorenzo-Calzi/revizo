@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import CollectionPreview from "../CollectionPreview/CollectionPreview";
 import CollectionPreviewFrame, {
     DeviceMode
 } from "../CollectionPreviewFrame/CollectionPreviewFrame";
@@ -7,6 +6,7 @@ import Text from "@/components/ui/Text/Text";
 import { Button } from "../ui";
 import type { CollectionStyle } from "@/types/collectionStyle";
 import { resolveCollectionStyle, safeCollectionStyle } from "@/types/collectionStyle";
+import { useToast } from "@/context/Toast/ToastContext";
 
 import {
     addItemToCollection,
@@ -22,9 +22,11 @@ import {
 
 import type { Collection, CollectionItemWithItem, CollectionSection, Item } from "@/types/database";
 
-import styles from "./CollectionBuilderModal.module.scss";
 import CollectionStylePanel from "../CollectionStylePanel/CollectionStylePanel";
 import CollectionContentPanel from "../CollectionContentPanel/CollectionContentPanel";
+import CollectionView from "../Collection/CollectionView/CollectionView";
+import { ChevronLeft, ChevronRight, Laptop, Smartphone, Tablet } from "lucide-react";
+import styles from "./CollectionBuilderModal.module.scss";
 
 type Props = {
     isOpen: boolean;
@@ -56,11 +58,15 @@ export default function CollectionBuilderModal({ isOpen, collectionId, onClose }
 
     const [mode, setMode] = useState<DeviceMode>("mobile");
 
+    const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
     const [draggingSectionId, setDraggingSectionId] = useState<string | null>(null);
     const [draggingItemId, setDraggingItemId] = useState<string | null>(null);
 
     // Stile (per ora 1 sola opzione)
     const [styleDraft, setStyleDraft] = useState<CollectionStyle>({});
+
+    const { showToast } = useToast();
 
     const savedStyle = useMemo(() => safeCollectionStyle(data?.collection.style ?? null), [data]);
 
@@ -264,16 +270,32 @@ export default function CollectionBuilderModal({ isOpen, collectionId, onClose }
     const handleSaveStyle = useCallback(async () => {
         if (!data) return;
 
-        const nextStyle: Record<string, unknown> = {
-            ...(data.collection.style ?? {}),
-            backgroundColor: styleDraft.backgroundColor ?? null,
-            cardRadius: styleDraft.cardRadius ?? null,
-            cardTemplate: styleDraft.cardTemplate ?? null
-        };
+        try {
+            const safeDraft = safeCollectionStyle(styleDraft);
 
-        const updated = await updateCollection(data.collection.id, { style: nextStyle });
+            const updated = await updateCollection(data.collection.id, {
+                style: safeDraft
+            });
 
-        setData(prev => (prev ? { ...prev, collection: updated } : prev));
+            setData(prev => (prev ? { ...prev, collection: updated } : prev));
+
+            // 🔄 riallinea il draft allo stato salvato
+            setStyleDraft(safeCollectionStyle(updated.style));
+
+            // ✅ TOAST SUCCESS
+            showToast({
+                type: "success",
+                message: "Stile salvato correttamente",
+                duration: 2500
+            });
+        } catch (error) {
+            // ❌ TOAST ERROR
+            showToast({
+                type: "error",
+                message: "Errore nel salvataggio dello stile",
+                duration: 3000
+            });
+        }
     }, [data, styleDraft]);
 
     const handleReorderSections = useCallback(
@@ -432,9 +454,7 @@ export default function CollectionBuilderModal({ isOpen, collectionId, onClose }
                                 className={mode === "mobile" ? styles.deviceActive : styles.device}
                                 onClick={() => setMode("mobile")}
                             >
-                                <Text variant="body" weight={600}>
-                                    Mobile
-                                </Text>
+                                <Smartphone size={20} />
                             </button>
 
                             <button
@@ -444,9 +464,7 @@ export default function CollectionBuilderModal({ isOpen, collectionId, onClose }
                                 className={mode === "tablet" ? styles.deviceActive : styles.device}
                                 onClick={() => setMode("tablet")}
                             >
-                                <Text variant="body" weight={600}>
-                                    Tablet
-                                </Text>
+                                <Tablet size={20} />
                             </button>
 
                             <button
@@ -456,9 +474,7 @@ export default function CollectionBuilderModal({ isOpen, collectionId, onClose }
                                 className={mode === "desktop" ? styles.deviceActive : styles.device}
                                 onClick={() => setMode("desktop")}
                             >
-                                <Text variant="body" weight={600}>
-                                    Desktop
-                                </Text>
+                                <Laptop />
                             </button>
                         </div>
 
@@ -471,7 +487,16 @@ export default function CollectionBuilderModal({ isOpen, collectionId, onClose }
                 </header>
 
                 {/* BODY */}
-                <div className={styles.body}>
+                <div className={`${styles.body} ${!isSidebarOpen ? styles.bodyCollapsed : ""}`}>
+                    <button
+                        type="button"
+                        className={styles.collapseToggle}
+                        aria-label={isSidebarOpen ? "Nascondi pannello" : "Mostra pannello"}
+                        onClick={() => setIsSidebarOpen(v => !v)}
+                    >
+                        {isSidebarOpen ? <ChevronLeft /> : <ChevronRight />}
+                    </button>
+
                     {/* LEFT PANEL */}
                     <aside className={styles.left}>
                         {tab === "content" ? (
@@ -515,10 +540,28 @@ export default function CollectionBuilderModal({ isOpen, collectionId, onClose }
                     {/* RIGHT PREVIEW */}
                     <section className={styles.right} aria-label="Anteprima collezione">
                         <CollectionPreviewFrame mode={mode}>
-                            <CollectionPreview
-                                title={data?.collection.name ?? "Collezione"}
-                                sections={sections}
-                                items={items}
+                            <CollectionView
+                                mode="preview"
+                                businessName={"PREVIEW"}
+                                businessImage={""}
+                                collectionTitle={data?.collection.name ?? "Collezione"}
+                                sections={sections.map(s => ({
+                                    id: s.id,
+                                    name: s.name,
+                                    items: items
+                                        .filter(ci => ci.visible && ci.section_id === s.id)
+                                        .sort((a, b) => a.order_index - b.order_index)
+                                        .map(ci => ({
+                                            id: ci.id,
+                                            name: ci.item.name,
+                                            description: ci.item.description ?? null,
+                                            image: ci.item.metadata?.image ?? null,
+                                            price:
+                                                ci.item.base_price != null
+                                                    ? Number(ci.item.base_price)
+                                                    : null
+                                        }))
+                                }))}
                                 style={resolvedStyle}
                             />
                         </CollectionPreviewFrame>

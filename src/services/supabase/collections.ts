@@ -1,3 +1,4 @@
+import { PublicCollection } from "@/types/collectionPublic";
 import { supabase } from "./client";
 import type {
     Collection,
@@ -6,6 +7,7 @@ import type {
     Item,
     CollectionItemWithItem
 } from "@/types/database";
+import { resolveCollectionStyle, safeCollectionStyle } from "@/types/collectionStyle";
 
 /* ============================
    COLLECTIONS (CRUD)
@@ -347,4 +349,59 @@ export async function getPreviewCollectionItemsWithOverrides(
             };
         })
         .filter(Boolean) as CollectionItemWithItem[];
+}
+
+export async function getPublicCollectionById(
+    collectionId: string,
+    businessId: string
+): Promise<PublicCollection> {
+    const { data: collection, error: collectionError } = await supabase
+        .from("collections")
+        .select("id, name, style")
+        .eq("id", collectionId)
+        .single();
+
+    if (collectionError || !collection) {
+        throw new Error("Collection not found");
+    }
+
+    const sections = await listSections(collectionId);
+    const items = await getPreviewCollectionItemsWithOverrides(collectionId, businessId);
+
+    const itemsBySection = new Map<string, typeof items>();
+
+    for (const it of items) {
+        if (!it.visible) continue;
+        if (!it.section_id) continue;
+
+        const arr = itemsBySection.get(it.section_id) ?? [];
+        arr.push(it);
+        itemsBySection.set(it.section_id, arr);
+    }
+
+    const publicSections = sections
+        .map(section => {
+            const sectionItems = itemsBySection.get(section.id) ?? [];
+
+            return {
+                id: section.id,
+                name: section.name,
+                items: sectionItems.map(it => ({
+                    id: it.id,
+                    name: it.item.name,
+                    description: it.item.description ?? null,
+                    image: it.item.metadata?.image ?? null,
+                    price: it.item.base_price ?? null
+                }))
+            };
+        })
+        .filter(section => section.items.length > 0);
+
+    const resolvedStyle = resolveCollectionStyle(safeCollectionStyle(collection.style ?? null), {});
+
+    return {
+        title: collection.name,
+        sections: publicSections,
+        style: resolvedStyle
+    };
 }

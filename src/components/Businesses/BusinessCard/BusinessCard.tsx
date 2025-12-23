@@ -3,7 +3,6 @@ import ConfirmModal from "@/components/ui/ConfirmModal/ConfirmModal";
 import BusinessOverridesModal from "@/components/BusinessOverridesModal/BusinessOverridesModal";
 import Text from "@components/ui/Text/Text";
 import SelectCollectionModal from "../SelectCollectionModal/SelectCollectionModal";
-import BusinessPreviewModal from "../BusinessPreviewModal/BusinessPreviewModal";
 import { QRCodeSVG } from "qrcode.react";
 import { MoreVertical } from "lucide-react";
 import type { BusinessCardProps } from "@/types/Businesses";
@@ -13,7 +12,6 @@ export const BusinessCard: React.FC<BusinessCardProps> = ({
     business,
     onEdit,
     onDelete,
-    onOpenEditor,
     onOpenReviews
 }) => {
     const publicUrl = `${window.location.origin}/business/${business.slug}`;
@@ -21,8 +19,12 @@ export const BusinessCard: React.FC<BusinessCardProps> = ({
     const [showQrModal, setShowQrModal] = useState(false);
     const [showMenu, setShowMenu] = useState(false);
     const [showSelectCollection, setShowSelectCollection] = useState(false);
-    const [showPreview, setShowPreview] = useState(false);
     const [overrideOpen, setOverrideOpen] = useState(false);
+
+    // ✅ STATO LOCALE SORGENTE DI VERITÀ
+    const [activeCollectionId, setActiveCollectionId] = useState<string | null>(
+        business.active_collection_id
+    );
 
     const menuRef = useRef<HTMLDivElement | null>(null);
 
@@ -88,9 +90,8 @@ export const BusinessCard: React.FC<BusinessCardProps> = ({
                         )}
                     </div>
 
-                    {/* INFO TESTO */}
+                    {/* INFO */}
                     <div className={styles.info}>
-                        {/* ROW TITOLO + MENU ⋮ */}
                         <Text as="h3" variant="title-sm" weight={600}>
                             {business.name}
                         </Text>
@@ -118,14 +119,7 @@ export const BusinessCard: React.FC<BusinessCardProps> = ({
                 {/* ACTIONS */}
                 <div className={styles.actions}>
                     <div className={styles.actionsLeft}>
-                        <button
-                            className={styles.primary}
-                            onClick={() => onOpenEditor(business.id)}
-                        >
-                            Editor
-                        </button>
-
-                        {business.active_collection_id && (
+                        {activeCollectionId && (
                             <button
                                 className={styles.primary}
                                 onClick={() => setOverrideOpen(true)}
@@ -133,6 +127,16 @@ export const BusinessCard: React.FC<BusinessCardProps> = ({
                                 Gestisci disponibilità e prezzi
                             </button>
                         )}
+
+                        <button
+                            className={styles.secondary}
+                            onClick={() => {
+                                setShowSelectCollection(true);
+                                setShowMenu(false);
+                            }}
+                        >
+                            Seleziona collezione
+                        </button>
 
                         <button
                             className={styles.secondary}
@@ -149,24 +153,6 @@ export const BusinessCard: React.FC<BusinessCardProps> = ({
 
                         {showMenu && (
                             <div className={styles.dropdownMenu}>
-                                <button
-                                    onClick={() => {
-                                        setShowSelectCollection(true);
-                                        setShowMenu(false);
-                                    }}
-                                >
-                                    Seleziona collezione
-                                </button>
-
-                                <button
-                                    onClick={() => {
-                                        setShowPreview(true);
-                                        setShowMenu(false);
-                                    }}
-                                >
-                                    Anteprima sito
-                                </button>
-
                                 <button
                                     onClick={() => {
                                         onEdit(business);
@@ -218,34 +204,28 @@ export const BusinessCard: React.FC<BusinessCardProps> = ({
                 </div>
             </ConfirmModal>
 
-            {overrideOpen && business.active_collection_id && (
+            {/* OVERRIDES */}
+            {overrideOpen && activeCollectionId && (
                 <BusinessOverridesModal
                     isOpen={overrideOpen}
                     onClose={() => setOverrideOpen(false)}
                     businessId={business.id}
-                    collectionId={business.active_collection_id}
+                    collectionId={activeCollectionId}
                     title={`Gestisci disponibilità e prezzi — ${business.name}`}
                 />
             )}
 
-            {/* MODALE SELEZIONE COLLEZIONE */}
+            {/* SELECT COLLECTION */}
             <SelectCollectionModal
                 isOpen={showSelectCollection}
                 businessId={business.id}
-                activeCollectionId={business.active_collection_id}
+                activeCollectionId={activeCollectionId}
                 onClose={() => setShowSelectCollection(false)}
-                onUpdated={() => {
-                    // per ora chiudiamo solo la modale
-                    // (lo stato globale dei business verrà riallineato dal parent)
+                onUpdated={newId => {
+                    // ✅ aggiornamento immediato UI
+                    setActiveCollectionId(newId);
                     setShowSelectCollection(false);
                 }}
-            />
-
-            {/* MODALE ANTEPRIMA SITO */}
-            <BusinessPreviewModal
-                isOpen={showPreview}
-                business={business}
-                onClose={() => setShowPreview(false)}
             />
         </>
     );

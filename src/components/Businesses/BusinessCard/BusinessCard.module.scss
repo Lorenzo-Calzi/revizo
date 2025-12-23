@@ -56,6 +56,58 @@
   }
 }
 
+/* ---------------------------------------------
+   COLLECTION INFO
+--------------------------------------------- */
+.collectionInfo {
+  margin-top: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.collectionRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* CTA when active */
+.changeCollection {
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+
+  font-size: 0.85rem;
+  color: var(--brand-primary);
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+/* CTA when empty */
+.selectCollection {
+  align-self: flex-start;
+
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+
+  border: 1px dashed var(--border-color, #e5e7eb);
+  background: transparent;
+
+  font-size: 0.85rem;
+  cursor: pointer;
+
+  transition: border-color 0.15s ease, color 0.15s ease;
+
+  &:hover {
+    border-color: var(--brand-primary);
+    color: var(--brand-primary);
+  }
+}
+
 /* QR in alto a destra */
 .qrWrapper {
   height: 110px;

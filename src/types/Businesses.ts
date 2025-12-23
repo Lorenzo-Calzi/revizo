@@ -15,7 +15,6 @@ export interface BusinessCardProps {
     business: Business;
     onEdit: (business: Business) => void;
     onDelete: (id: string) => void;
-    onOpenEditor: (businessId: string) => void;
     onOpenReviews: (businessId: string) => void;
 }
 
@@ -23,6 +22,5 @@ export interface BusinessListProps {
     businesses: Business[];
     onEdit: (business: Business) => void;
     onDelete: (id: string) => void;
-    onOpenEditor: (id: string) => void;
     onOpenReviews: (id: string) => void;
 }

@@ -1,101 +1,214 @@
-.addSection {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 10px;
-  margin: 10px 0 12px;
-}
+@use "@styles/variables" as *;
 
-.sectionList {
-  display: grid;
-  gap: 8px;
-  margin-top: 10px;
-}
-
-.section,
-.sectionActive {
-  width: 100%;
-  text-align: left;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  background: #fff;
-  padding: 10px 12px;
-  border-radius: 12px;
-  cursor: pointer;
-}
-
-.sectionActive {
-  border-color: rgba(140, 80, 255, 0.55);
-  box-shadow: 0 10px 22px rgba(140, 80, 255, 0.12);
-}
-
-.divider {
-  height: 1px;
-  background: rgba(0, 0, 0, 0.06);
-  margin: 14px 0;
-}
-
-.searchBox {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 10px;
-  margin-top: 10px;
-}
-
-.searchResults {
-  margin-top: 10px;
-  display: grid;
-  gap: 8px;
-}
-
-.searchResult {
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  background: #fff;
-  border-radius: 12px;
-  padding: 10px 12px;
-  cursor: pointer;
+/* ----------------------------------------------------
+   PANEL
+---------------------------------------------------- */
+.panel {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 10px;
+  flex-direction: column;
+  gap: 14px;
 }
 
-.itemsList {
-  margin-top: 10px;
-  display: grid;
-  gap: 10px;
-}
-
-.itemRow {
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  background: #fff;
-  border-radius: 12px;
-  padding: 10px 12px;
+/* ----------------------------------------------------
+   HEADER ROW
+---------------------------------------------------- */
+.headerRow {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
 }
 
-.sectionDragging {
+/* ----------------------------------------------------
+   INLINE ACTION (aggiungi sezione)
+---------------------------------------------------- */
+.inlineAction {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+
+  font-size: 0.85rem;
+  font-weight: 500;
+
+  color: $brand-primary;
+  background: none;
+  border: none;
+  padding: 4px 6px;
+  border-radius: 6px;
+
+  cursor: pointer;
+  transition: background 0.15s ease;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.05);
+  }
+}
+
+/* ----------------------------------------------------
+   INLINE FORM
+---------------------------------------------------- */
+.inlineForm {
+  margin-top: -6px;
+}
+
+/* ----------------------------------------------------
+   SECTION LIST
+---------------------------------------------------- */
+.sectionList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* ----------------------------------------------------
+   SECTION ROW
+---------------------------------------------------- */
+.sectionRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  padding: 8px 10px;
+  border-radius: 8px;
+
+  background: transparent;
+  border: none;
+  text-align: left;
+
+  cursor: pointer;
+  transition: background 0.15s ease;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.04);
+  }
+}
+
+.active {
+  background: rgba(140, 80, 255, 0.08);
+}
+
+.dragging {
   opacity: 0.5;
 }
 
-.itemDragging {
-  opacity: 0.5;
+/* ----------------------------------------------------
+   DIVIDER
+---------------------------------------------------- */
+.divider {
+  height: 1px;
+  background: rgba(0, 0, 0, 0.08);
+  margin: 8px 0;
 }
 
+/* ----------------------------------------------------
+   DRAG HANDLE
+---------------------------------------------------- */
 .dragHandle {
+  font-size: 14px;
+  line-height: 1;
+  color: rgba(0, 0, 0, 0.3);
+
+  opacity: 0;
+  transition: opacity 0.15s ease;
+
   cursor: grab;
-  padding: 6px 8px;
-  margin-right: 6px;
-  user-select: none;
 }
+
+.sectionRow:hover .dragHandle,
+.itemRow:hover .dragHandle {
+  opacity: 1;
+}
+
 .dragHandle:active {
   cursor: grabbing;
 }
 
-.sectionOver {
-  outline: 2px dashed rgba(0, 0, 0, 0.2);
+/* ----------------------------------------------------
+   SEARCH RESULTS
+---------------------------------------------------- */
+.searchResults {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
-.itemOver {
-  outline: 2px dashed rgba(0, 0, 0, 0.2);
+
+.searchResult {
+  padding: 8px 10px;
+  border-radius: 8px;
+
+  background: rgba(0, 0, 0, 0.03);
+  border: none;
+  text-align: left;
+
+  cursor: pointer;
+  transition: background 0.15s ease;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.06);
+  }
+}
+
+/* ----------------------------------------------------
+   ITEMS LIST
+---------------------------------------------------- */
+.itemsList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* ----------------------------------------------------
+   ITEM ROW
+---------------------------------------------------- */
+.itemRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 8px 10px;
+  border-radius: 8px;
+
+  background: rgba(0, 0, 0, 0.03);
+  transition: background 0.15s ease;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.06);
+  }
+}
+
+.itemLeft {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ----------------------------------------------------
+   VISIBILITY TOGGLE
+---------------------------------------------------- */
+.visibilityToggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: none;
+  border: none;
+  padding: 4px;
+  border-radius: 6px;
+
+  color: rgba(0, 0, 0, 0.45);
+  cursor: pointer;
+
+  transition: color 0.15s ease, background 0.15s ease;
+
+  &:hover {
+    color: $brand-primary;
+    background: rgba(0, 0, 0, 0.05);
+  }
+}
+
+/* ----------------------------------------------------
+   HELPER TEXT
+---------------------------------------------------- */
+.helperText {
+  color: rgba(0, 0, 0, 0.55);
+  font-size: 0.85rem;
 }

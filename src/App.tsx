@@ -22,6 +22,7 @@ import Settings from "@/pages/Dashboard/Settings/Settings";
 
 // Public pages
 // import PublicCatalogPage from "./pages/PublicCatalog/PublicCatalogPage";
+import PublicCollectionPage from "./pages/PublicCollectionPage/PublicCollectionPage";
 import Home from "./pages/Home/Home";
 
 export default function App() {
@@ -29,7 +30,7 @@ export default function App() {
         <Routes>
             {/* Public routes */}
             <Route path="/" element={<Home />} />
-            {/* <Route path="/business/:slug" element={<PublicCatalogPage />} /> */}
+            <Route path="/business/:slug" element={<PublicCollectionPage />} />
 
             {/* Auth routes */}
             <Route path="/login" element={<Login />} />

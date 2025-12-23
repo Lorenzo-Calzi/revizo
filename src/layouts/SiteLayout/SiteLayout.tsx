@@ -12,7 +12,7 @@ export default function SiteLayout({ children }: SiteLayoutProps) {
         <div className={styles.layout}>
             <header className={styles.header}>
                 <Text variant="title-md" as={"h1"} colorVariant="dark">
-                    Revizo
+                    CataloGlobe
                 </Text>
                 <nav className={styles.nav}>
                     <a href="#features">

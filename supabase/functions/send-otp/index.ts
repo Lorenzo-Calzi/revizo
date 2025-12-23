@@ -64,7 +64,7 @@ serve(async req => {
 
         // 5️⃣ Invia email OTP
         await resend.emails.send({
-            from: "Revizo <onboarding@resend.dev>",
+            from: "CataloGlobe <onboarding@resend.dev>",
             to: email,
             subject: "Il tuo codice di verifica",
             html: `

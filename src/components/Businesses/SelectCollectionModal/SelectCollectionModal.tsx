@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Text from "@/components/ui/Text/Text";
 import { Button } from "@/components/ui/Button/Button";
 import { listCollections } from "@/services/supabase/collections";
@@ -11,6 +11,10 @@ type Props = {
     businessId: string;
     activeCollectionId: string | null;
     onClose: () => void;
+    /**
+     * Callback per far aggiornare lo stato nel parent.
+     * (consigliato: aggiorna subito business.active_collection_id o invalida query)
+     */
     onUpdated?: (newActiveCollectionId: string | null) => void;
 };
 
@@ -26,8 +30,11 @@ export default function SelectCollectionModal({
     const [savingId, setSavingId] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
 
+    // ✅ Stato locale ottimistico per evitare UI “stale” finché il parent non si aggiorna
+    const [localActiveId, setLocalActiveId] = useState<string | null>(activeCollectionId);
+
     /* ============================
-       LOAD COLLECTIONS
+       LOAD COLLECTIONS (on open)
     ============================ */
     useEffect(() => {
         if (!isOpen) return;
@@ -52,17 +59,27 @@ export default function SelectCollectionModal({
     }, [isOpen]);
 
     /* ============================
+       SYNC LOCAL ACTIVE ID
+       - quando il parent cambia valore
+       - e all’apertura modale (così si riallinea al DB se serve)
+    ============================ */
+    useEffect(() => {
+        if (!isOpen) return;
+        setLocalActiveId(activeCollectionId);
+    }, [isOpen, activeCollectionId]);
+
+    /* ============================
        SORT: ACTIVE FIRST
     ============================ */
     const sortedCollections = useMemo(() => {
         const copy = [...collections];
         copy.sort((a, b) => {
-            if (a.id === activeCollectionId) return -1;
-            if (b.id === activeCollectionId) return 1;
+            if (a.id === localActiveId) return -1;
+            if (b.id === localActiveId) return 1;
             return 0;
         });
         return copy;
-    }, [collections, activeCollectionId]);
+    }, [collections, localActiveId]);
 
     /* ============================
        ESC TO CLOSE
@@ -77,6 +94,31 @@ export default function SelectCollectionModal({
         window.addEventListener("keydown", onKey);
         return () => window.removeEventListener("keydown", onKey);
     }, [isOpen, onClose]);
+
+    const applyActiveCollection = useCallback(
+        async (nextId: string | null, lockId: string) => {
+            setSavingId(lockId);
+            setError(null);
+
+            try {
+                await updateBusiness(businessId, { active_collection_id: nextId });
+
+                // ✅ aggiorno subito UI locale (risolve il “finché non ricarico”)
+                setLocalActiveId(nextId);
+
+                // ✅ chiedo anche al parent di aggiornarsi (best practice)
+                onUpdated?.(nextId);
+
+                onClose();
+            } catch (e: unknown) {
+                const message = e instanceof Error ? e.message : "Errore nel salvataggio";
+                setError(message);
+            } finally {
+                setSavingId(null);
+            }
+        },
+        [businessId, onClose, onUpdated]
+    );
 
     if (!isOpen) return null;
 
@@ -113,13 +155,13 @@ export default function SelectCollectionModal({
                         <Text colorVariant="muted">Nessuna collezione trovata.</Text>
                     )}
 
-                    <ul className={styles.list}>
+                    <ul className={styles.list} role="list">
                         {sortedCollections.map(col => {
-                            const isActive = col.id === activeCollectionId;
+                            const isActive = col.id === localActiveId;
                             const isSaving = savingId === col.id;
 
                             return (
-                                <li key={col.id} className={styles.row}>
+                                <li key={col.id} className={styles.row} role="listitem">
                                     <div className={styles.rowLeft}>
                                         <Text weight={600}>{col.name}</Text>
                                         {col.description && (
@@ -138,27 +180,9 @@ export default function SelectCollectionModal({
                                             <Button
                                                 label="Imposta"
                                                 loading={isSaving}
-                                                onClick={async () => {
-                                                    setSavingId(col.id);
-                                                    setError(null);
-
-                                                    try {
-                                                        await updateBusiness(businessId, {
-                                                            active_collection_id: col.id
-                                                        });
-
-                                                        onUpdated?.(col.id);
-                                                        onClose();
-                                                    } catch (e: unknown) {
-                                                        const message =
-                                                            e instanceof Error
-                                                                ? e.message
-                                                                : "Errore nel salvataggio";
-                                                        setError(message);
-                                                    } finally {
-                                                        setSavingId(null);
-                                                    }
-                                                }}
+                                                onClick={() =>
+                                                    applyActiveCollection(col.id, col.id)
+                                                }
                                             />
                                         )}
 
@@ -167,27 +191,7 @@ export default function SelectCollectionModal({
                                                 label="Rimuovi"
                                                 variant="secondary"
                                                 loading={isSaving}
-                                                onClick={async () => {
-                                                    setSavingId(col.id);
-                                                    setError(null);
-
-                                                    try {
-                                                        await updateBusiness(businessId, {
-                                                            active_collection_id: null
-                                                        });
-
-                                                        onUpdated?.(null);
-                                                        onClose();
-                                                    } catch (e: unknown) {
-                                                        const message =
-                                                            e instanceof Error
-                                                                ? e.message
-                                                                : "Errore nella rimozione";
-                                                        setError(message);
-                                                    } finally {
-                                                        setSavingId(null);
-                                                    }
-                                                }}
+                                                onClick={() => applyActiveCollection(null, col.id)}
                                             />
                                         )}
                                     </div>

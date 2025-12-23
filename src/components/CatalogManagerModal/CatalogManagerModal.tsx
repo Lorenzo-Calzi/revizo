@@ -10,8 +10,8 @@ import {
     updateItem
 } from "@/services/supabase/collections";
 import type { Item } from "@/types/database";
-import styles from "./CatalogManagerModal.module.scss";
 import { uploadCatalogItemImage } from "@/services/supabase/upload";
+import styles from "./CatalogManagerModal.module.scss";
 
 type Props = {
     isOpen: boolean;
