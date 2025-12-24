@@ -82,15 +82,15 @@ export default function Collections() {
                 <header className={styles.header}>
                     <div className={styles.headerText}>
                         <Text variant="body" colorVariant="muted">
-                            Gestisci i menu e le collezioni visibili ai tuoi clienti
+                            Gestisci i tuo cataloghi (listini prezzi, menu, etc...)
                         </Text>
                     </div>
 
                     <div className={styles.headerActions}>
-                        <Button label="Crea collezione" onClick={openCreateModal} />
+                        <Button label="Crea catalogo" onClick={openCreateModal} />
 
                         <Button
-                            label="Apri catalogo"
+                            label="I tuoi prodotti"
                             variant="secondary"
                             onClick={() => setCatalogOpen(true)}
                         />
@@ -113,7 +113,7 @@ export default function Collections() {
                 <ul className={styles.list} role="list">
                     {collections.map(col => (
                         <li key={col.id} role="listitem">
-                            <button
+                            <div
                                 className={styles.card}
                                 onClick={() => setActiveCollectionId(col.id)}
                             >
@@ -154,7 +154,7 @@ export default function Collections() {
                                         year: "numeric"
                                     })}
                                 </Text>
-                            </button>
+                            </div>
                         </li>
                     ))}
                 </ul>

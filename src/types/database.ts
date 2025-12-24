@@ -62,49 +62,7 @@ export interface Business {
 }
 
 /* ============================
-   ⚠️ LEGACY TYPES (DO NOT USE)
-   To be removed after migration
-============================ */
-
-export interface BusinessCategory {
-    id: string;
-    business_id: string;
-    name: string;
-    order_index: number;
-    visible: boolean;
-    created_at: string;
-}
-
-export interface BusinessItem {
-    id: string;
-    category_id: string;
-    name: string;
-    description: string | null;
-    price: number | null;
-    duration: number | null;
-    allergens: string[] | null;
-    image: string | null;
-    order_index: number;
-    visible: boolean;
-    created_at: string;
-}
-
-export type RawCategoryRow = {
-    id: string;
-    order_index: number;
-    category: BusinessCategory | BusinessCategory[] | null;
-};
-
-export type RawItemRow = {
-    id: string;
-    order_index: number;
-    category_id: string;
-    item: BusinessItem | BusinessItem[] | null;
-    visible: boolean | null;
-};
-
-/* ============================
-   ✅ NEW DOMAIN TYPES
+   DOMAIN TYPES
 ============================ */
 
 export interface Item {

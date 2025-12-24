@@ -17,11 +17,7 @@ import Reviews from "@pages/Dashboard/Reviews/Reviews";
 import Analytics from "@pages/Dashboard/Analytics/Analytics";
 import Settings from "@/pages/Dashboard/Settings/Settings";
 
-// Catalog Editor
-// import CatalogEditorPage from "./pages/CatalogEditorPage/CatalogEditorPage";
-
 // Public pages
-// import PublicCatalogPage from "./pages/PublicCatalog/PublicCatalogPage";
 import PublicCollectionPage from "./pages/PublicCollectionPage/PublicCollectionPage";
 import Home from "./pages/Home/Home";
 
@@ -38,9 +34,6 @@ export default function App() {
             <Route path="/signup" element={<SignUp />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/update-password" element={<UpdatePassword />} />
-
-            {/* Catalog editor (protected but outside dashboard nav) */}
-            {/* <Route path="/dashboard/business/:businessId/editor" element={<CatalogEditorPage />} /> */}
 
             {/* Private dashboard area */}
             <Route

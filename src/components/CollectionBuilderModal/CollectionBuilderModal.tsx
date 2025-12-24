@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import CollectionPreviewFrame, {
     DeviceMode
-} from "../CollectionPreviewFrame/CollectionPreviewFrame";
+} from "./CollectionPreviewFrame/CollectionPreviewFrame";
 import Text from "@/components/ui/Text/Text";
 import { Button } from "../ui";
 import type { CollectionStyle } from "@/types/collectionStyle";
@@ -22,9 +22,9 @@ import {
 
 import type { Collection, CollectionItemWithItem, CollectionSection, Item } from "@/types/database";
 
-import CollectionStylePanel from "../CollectionStylePanel/CollectionStylePanel";
-import CollectionContentPanel from "../CollectionContentPanel/CollectionContentPanel";
-import CollectionView from "../Collection/CollectionView/CollectionView";
+import CollectionStylePanel from "./CollectionStylePanel/CollectionStylePanel";
+import CollectionContentPanel from "./CollectionContentPanel/CollectionContentPanel";
+import CollectionView from "../PublicCollectionView/CollectionView/CollectionView";
 import { ChevronLeft, ChevronRight, Laptop, Smartphone, Tablet } from "lucide-react";
 import styles from "./CollectionBuilderModal.module.scss";
 

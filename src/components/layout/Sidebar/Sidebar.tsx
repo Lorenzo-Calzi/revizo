@@ -1,23 +1,15 @@
 import { Footer } from "../Footer/Footer";
 import Text from "@/components/ui/Text/Text";
 import { NavLink } from "react-router-dom";
-import {
-    LayoutDashboard,
-    Store,
-    MessageSquare,
-    ChartNoAxesCombined,
-    Settings,
-    X,
-    LibraryBig
-} from "lucide-react";
+import { LayoutDashboard, Store, Settings, X, LibraryBig, Star, ChartPie } from "lucide-react";
 import styles from "./Sidebar.module.scss";
 
 const links = [
     { to: "/dashboard", label: "Panoramica", icon: <LayoutDashboard /> },
-    { to: "/dashboard/businesses", label: "Le tue attività", icon: <Store /> },
-    { to: "/dashboard/collections", label: "Le tue collezioni", icon: <LibraryBig /> },
-    { to: "/dashboard/reviews", label: "Recensioni", icon: <MessageSquare /> },
-    { to: "/dashboard/analytics", label: "Analytics", icon: <ChartNoAxesCombined /> },
+    { to: "/dashboard/businesses", label: "Le tue Attività", icon: <Store /> },
+    { to: "/dashboard/collections", label: "I tuoi Cataloghi", icon: <LibraryBig /> },
+    { to: "/dashboard/reviews", label: "Recensioni", icon: <Star /> },
+    { to: "/dashboard/analytics", label: "Analytics", icon: <ChartPie /> },
     { to: "/dashboard/settings", label: "Impostazioni", icon: <Settings /> }
 ];
 

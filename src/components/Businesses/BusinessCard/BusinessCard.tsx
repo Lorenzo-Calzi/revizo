@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import ConfirmModal from "@/components/ui/ConfirmModal/ConfirmModal";
-import BusinessOverridesModal from "@/components/BusinessOverridesModal/BusinessOverridesModal";
+import BusinessOverridesModal from "../BusinessOverridesModal/BusinessOverridesModal";
 import Text from "@components/ui/Text/Text";
 import SelectCollectionModal from "../SelectCollectionModal/SelectCollectionModal";
 import { QRCodeSVG } from "qrcode.react";

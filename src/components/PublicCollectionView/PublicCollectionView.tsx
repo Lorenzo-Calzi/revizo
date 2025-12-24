@@ -1,4 +1,4 @@
-import CollectionView from "@/components/Collection/CollectionView/CollectionView";
+import CollectionView from "@/components/PublicCollectionView/CollectionView/CollectionView";
 import type { PublicCollection } from "@/types/collectionPublic";
 import { Business } from "@/types/database";
 
