@@ -8,6 +8,7 @@ import type {
     CollectionItemWithItem
 } from "@/types/database";
 import { resolveCollectionStyle, safeCollectionStyle } from "@/types/collectionStyle";
+import { CatalogType } from "@/types/catalog";
 
 /* ============================
    COLLECTIONS (CRUD)
@@ -95,10 +96,11 @@ export async function createSection(
    ITEMS (GLOBAL)
 ============================ */
 
-export async function searchItems(query: string): Promise<Item[]> {
+export async function searchItems(query: string, type: CatalogType): Promise<Item[]> {
     const { data, error } = await supabase
         .from("items")
         .select("*")
+        .eq("type", type)
         .ilike("name", `%${query}%`)
         .limit(20);
 
@@ -111,6 +113,7 @@ export async function createItem(data: {
     description?: string;
     base_price?: number;
     duration?: number;
+    type: CatalogType;
 }): Promise<Item> {
     const { data: item, error } = await supabase
         .from("items")
@@ -118,7 +121,8 @@ export async function createItem(data: {
             name: data.name,
             description: data.description ?? null,
             base_price: data.base_price ?? null,
-            duration: data.duration ?? null
+            duration: data.duration ?? null,
+            type: data.type
         })
         .select()
         .single();
@@ -127,10 +131,11 @@ export async function createItem(data: {
     return item;
 }
 
-export async function listItems(limit = 50): Promise<Item[]> {
+export async function listItems(type: CatalogType, limit = 50): Promise<Item[]> {
     const { data, error } = await supabase
         .from("items")
         .select("*")
+        .eq("type", type)
         .order("created_at", { ascending: false })
         .limit(limit);
 
@@ -299,7 +304,7 @@ export async function getCollectionItemsWithData(
                 description: rawItem.description,
                 base_price: rawItem.base_price,
                 duration: rawItem.duration,
-                metadata: rawItem.metadata ?? null,
+                metadata: rawItem.metadata ?? {},
                 created_at: rawItem.created_at,
                 updated_at: rawItem.updated_at
             }

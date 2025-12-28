@@ -10,6 +10,7 @@ import {
 import type { Collection } from "@/types/database";
 import CollectionBuilderModal from "@/components/CollectionBuilderModal/CollectionBuilderModal";
 import ConfirmModal from "@/components/ui/ConfirmModal/ConfirmModal";
+import { businessTypeToCatalogType } from "@/domain/catalog/businessToCatalog";
 import { Pencil } from "lucide-react";
 import styles from "./Collections.module.scss";
 
@@ -34,6 +35,8 @@ export default function Collections() {
             setLoading(false);
         }
     }, []);
+
+    const catalogType = businessTypeToCatalogType(null);
 
     useEffect(() => {
         loadCollections();
@@ -166,7 +169,11 @@ export default function Collections() {
                 onClose={() => setActiveCollectionId(null)}
             />
 
-            <CatalogManagerModal isOpen={catalogOpen} onClose={() => setCatalogOpen(false)} />
+            <CatalogManagerModal
+                isOpen={catalogOpen}
+                onClose={() => setCatalogOpen(false)}
+                catalogType={catalogType}
+            />
 
             <ConfirmModal
                 isOpen={modalOpen}

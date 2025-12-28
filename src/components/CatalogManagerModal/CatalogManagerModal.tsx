@@ -1,227 +1,193 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import Text from "@/components/ui/Text/Text";
-import { Button } from "@/components/ui/Button/Button";
-import { Input } from "@/components/ui/Input/Input";
+import { useCallback, useEffect, useRef, useState } from "react";
+import styles from "./CatalogManagerModal.module.scss";
+
+import Text from "../ui/Text/Text";
+import { Button } from "../ui";
+import { Input } from "../ui";
+
+import type { Item } from "@/types/database";
+import type { CatalogType, ServiceSubtype } from "@/types/catalog";
+
 import {
-    createItem,
-    deleteItem,
     listItems,
     searchItems,
-    updateItem
+    createItem,
+    updateItem,
+    deleteItem
 } from "@/services/supabase/collections";
-import type { Item } from "@/types/database";
-import { uploadCatalogItemImage } from "@/services/supabase/upload";
-import styles from "./CatalogManagerModal.module.scss";
+
+import { getFieldsForCollection } from "@/domain/catalog/getCatalogConfig";
 
 type Props = {
     isOpen: boolean;
     onClose: () => void;
+    catalogType: CatalogType;
 };
 
-type DraftMap = Record<
-    string,
-    {
+type Draft = {
+    base: {
         name: string;
         description: string;
         base_price: string;
         duration: string;
-        image?: string | null;
-        allergens?: string[];
-    }
->;
+    };
+    metadata: Record<string, unknown>;
+    subtype?: ServiceSubtype;
+};
 
-function normalizeNumber(value: string): number | null {
-    const v = value.trim();
-    if (!v) return null;
-    const n = Number(v.replace(",", "."));
-    return Number.isFinite(n) ? n : null;
+function readSubtype(metadata: Item["metadata"]): ServiceSubtype | undefined {
+    const st = (metadata as any)?.subtype;
+    if (st === "generic" || st === "hairdresser" || st === "beauty") return st;
+    return undefined;
 }
 
-export default function CatalogManagerModal({ isOpen, onClose }: Props) {
+export default function CatalogManagerModal({ isOpen, onClose, catalogType }: Props) {
+    const firstFocusRef = useRef<HTMLInputElement | null>(null);
+
+    // "catalogType" è il default esterno; "activeCatalogType" è il filtro interno
+    const [activeCatalogType, setActiveCatalogType] = useState<CatalogType>(catalogType);
+
+    const [items, setItems] = useState<Item[]>([]);
+    const [drafts, setDrafts] = useState<Record<string, Draft>>({});
+    const [openId, setOpenId] = useState<string | null>(null);
+
+    const [query, setQuery] = useState("");
+    const [createName, setCreateName] = useState("");
+    const [createError, setCreateError] = useState<string | null>(null);
+
     const [loading, setLoading] = useState(false);
     const [savingId, setSavingId] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
 
-    const [query, setQuery] = useState("");
-    const [items, setItems] = useState<Item[]>([]);
-    const [openId, setOpenId] = useState<string | null>(null);
+    // evita race tra fetch multipli (type change + search)
+    const reqIdRef = useRef(0);
 
-    const [createName, setCreateName] = useState("");
-    const [createError, setCreateError] = useState<string | null>(null);
+    /* ----------------------------------------
+       RESET SOLO ALL'APERTURA
+    ---------------------------------------- */
+    useEffect(() => {
+        if (!isOpen) return;
 
-    const [drafts, setDrafts] = useState<DraftMap>({});
+        // quando apro: riallineo il filtro al default esterno (fallback C -> menu, ecc.)
+        setActiveCatalogType(catalogType);
 
-    const firstFocusRef = useRef<HTMLInputElement | null>(null);
-
-    const loadInitial = useCallback(async () => {
-        setLoading(true);
+        // reset UI (solo apertura)
+        setItems([]);
+        setDrafts({});
+        setOpenId(null);
+        setQuery("");
+        setCreateName("");
+        setCreateError(null);
         setError(null);
-        try {
-            const data = await listItems(50);
-            setItems(data);
-        } catch (e: unknown) {
-            setError(e instanceof Error ? e.message : "Errore nel caricamento del catalogo");
-        } finally {
-            setLoading(false);
-        }
-    }, []);
 
-    // open/close lifecycle
-    useEffect(() => {
-        if (!isOpen) return;
-        loadInitial();
+        // focus input
+        const t = setTimeout(() => firstFocusRef.current?.focus(), 50);
+        return () => clearTimeout(t);
+    }, [isOpen, catalogType]);
 
-        // focus
-        setTimeout(() => firstFocusRef.current?.focus(), 0);
-    }, [isOpen, loadInitial]);
-
-    // esc close
-    useEffect(() => {
-        if (!isOpen) return;
-        const onKey = (e: KeyboardEvent) => {
-            if (e.key === "Escape") onClose();
-        };
-        window.addEventListener("keydown", onKey);
-        return () => window.removeEventListener("keydown", onKey);
-    }, [isOpen, onClose]);
-
-    // search debounce
-    useEffect(() => {
-        if (!isOpen) return;
-
-        const t = setTimeout(async () => {
-            const q = query.trim();
-
-            // se query vuota → lista base (più performante di ilike "%%")
-            if (!q) {
-                await loadInitial();
-                return;
-            }
-
+    /* ----------------------------------------
+       FETCH BASE LIST (quando cambia type e query è vuota)
+       - NON resetta la UI
+       - ignora risposte vecchie
+    ---------------------------------------- */
+    const loadBaseList = useCallback(
+        async (type: CatalogType) => {
+            const myReq = ++reqIdRef.current;
             setLoading(true);
             setError(null);
+
             try {
-                const data = await searchItems(q);
+                const data = await listItems(type, 50);
+                if (reqIdRef.current !== myReq) return; // risposta vecchia
                 setItems(data);
-            } catch (e: unknown) {
-                setError(e instanceof Error ? e.message : "Errore nella ricerca");
+            } catch {
+                if (reqIdRef.current !== myReq) return;
+                setError("Errore nel caricamento dei contenuti");
+                setItems([]);
             } finally {
-                setLoading(false);
+                if (reqIdRef.current === myReq) setLoading(false);
+            }
+        },
+        [setItems]
+    );
+
+    /* ----------------------------------------
+       SEARCH (debounced)
+       - se query vuota -> ricarico base list del type attivo
+       - ignora risposte vecchie
+    ---------------------------------------- */
+    useEffect(() => {
+        if (!isOpen) return;
+
+        const q = query.trim();
+
+        // se query vuota: carico lista base per il type attivo
+        if (!q) {
+            loadBaseList(activeCatalogType);
+            return;
+        }
+
+        const myReq = ++reqIdRef.current;
+
+        const t = setTimeout(async () => {
+            setLoading(true);
+            setError(null);
+
+            try {
+                const data = await searchItems(q, activeCatalogType);
+                if (reqIdRef.current !== myReq) return;
+                setItems(data);
+            } catch {
+                if (reqIdRef.current !== myReq) return;
+                setError("Errore nella ricerca");
+                setItems([]);
+            } finally {
+                if (reqIdRef.current === myReq) setLoading(false);
             }
         }, 250);
 
         return () => clearTimeout(t);
-    }, [query, isOpen, loadInitial]);
+    }, [query, isOpen, activeCatalogType, loadBaseList]);
 
-    const sorted = useMemo(() => {
-        // lasciamo l’ordine già dato da query/listItems
-        return items;
-    }, [items]);
-
+    /* ----------------------------------------
+       DRAFT INIT
+    ---------------------------------------- */
     const ensureDraft = useCallback((it: Item) => {
         setDrafts(prev => {
             if (prev[it.id]) return prev;
+
+            const meta = (it.metadata as Record<string, unknown>) ?? {};
+
             return {
                 ...prev,
                 [it.id]: {
-                    name: it.name ?? "",
-                    description: it.description ?? "",
-                    base_price: it.base_price != null ? String(it.base_price) : "",
-                    duration: it.duration != null ? String(it.duration) : "",
-                    image: it.metadata?.image ?? null,
-                    allergens: it.metadata?.allergens ?? []
+                    base: {
+                        name: it.name ?? "",
+                        description: it.description ?? "",
+                        base_price: it.base_price != null ? String(it.base_price) : "",
+                        duration: it.duration != null ? String(it.duration) : ""
+                    },
+                    metadata: meta,
+                    subtype: readSubtype(it.metadata)
                 }
             };
         });
     }, []);
 
+    /* ----------------------------------------
+       TOGGLE ITEM
+    ---------------------------------------- */
     const onToggle = useCallback(
         (it: Item) => {
-            const next = openId === it.id ? null : it.id;
-            setOpenId(next);
-            if (next) ensureDraft(it);
+            ensureDraft(it);
+            setOpenId(prev => (prev === it.id ? null : it.id));
         },
-        [openId, ensureDraft]
+        [ensureDraft]
     );
 
-    const onChangeDraft = useCallback(
-        <K extends keyof DraftMap[string]>(id: string, key: K, value: DraftMap[string][K]) => {
-            setDrafts(prev => ({
-                ...prev,
-                [id]: {
-                    ...(prev[id] ?? {
-                        name: "",
-                        description: "",
-                        base_price: "",
-                        duration: "",
-                        image: null,
-                        allergens: []
-                    }),
-                    [key]: value
-                }
-            }));
-        },
-        []
-    );
-
-    const onSave = useCallback(
-        async (it: Item) => {
-            const d = drafts[it.id];
-            if (!d) return;
-
-            const name = d.name.trim();
-            if (!name) {
-                setError("Il nome non può essere vuoto.");
-                return;
-            }
-
-            setSavingId(it.id);
-            setError(null);
-
-            try {
-                const updated = await updateItem(it.id, {
-                    name,
-                    description: d.description.trim() || null,
-                    base_price: normalizeNumber(d.base_price),
-                    duration: normalizeNumber(d.duration),
-                    metadata: {
-                        image: d.image ?? null,
-                        allergens: d.allergens ?? []
-                    }
-                });
-
-                setItems(prev => prev.map(x => (x.id === it.id ? updated : x)));
-            } catch (e: unknown) {
-                setError(e instanceof Error ? e.message : "Errore nel salvataggio");
-            } finally {
-                setSavingId(null);
-            }
-        },
-        [drafts]
-    );
-
-    const onRemove = useCallback(
-        async (id: string) => {
-            setSavingId(id);
-            setError(null);
-            try {
-                await deleteItem(id);
-                setItems(prev => prev.filter(x => x.id !== id));
-                setDrafts(prev => {
-                    const copy = { ...prev };
-                    delete copy[id];
-                    return copy;
-                });
-                if (openId === id) setOpenId(null);
-            } catch (e: unknown) {
-                setError(e instanceof Error ? e.message : "Errore durante l’eliminazione");
-            } finally {
-                setSavingId(null);
-            }
-        },
-        [openId]
-    );
-
+    /* ----------------------------------------
+       CREATE
+    ---------------------------------------- */
     const onCreate = useCallback(async () => {
         const name = createName.trim();
         if (!name) {
@@ -233,41 +199,87 @@ export default function CatalogManagerModal({ isOpen, onClose }: Props) {
         setSavingId("create");
 
         try {
-            const newItem = await createItem({ name });
-            setItems(prev => [newItem, ...prev]);
+            const newItem = await createItem({
+                name,
+                type: activeCatalogType
+            });
 
-            // apriamo subito l’accordion appena creato
+            setItems(prev => [newItem, ...prev]);
             setOpenId(newItem.id);
             ensureDraft(newItem);
-
             setCreateName("");
-        } catch (e: unknown) {
-            setCreateError(e instanceof Error ? e.message : "Errore nella creazione dell’item");
+        } catch {
+            setCreateError("Errore nella creazione del contenuto");
         } finally {
             setSavingId(null);
         }
-    }, [createName, ensureDraft]);
+    }, [createName, activeCatalogType, ensureDraft]);
 
+    /* ----------------------------------------
+       UPDATE
+    ---------------------------------------- */
+    const onSave = async (it: Item) => {
+        const d = drafts[it.id];
+        if (!d) return;
+
+        setSavingId(it.id);
+        try {
+            const payload = {
+                name: d.base.name,
+                description: d.base.description || null,
+                base_price: d.base.base_price ? Number(d.base.base_price) : null,
+                duration: d.base.duration ? Number(d.base.duration) : null,
+                metadata: {
+                    ...(it.metadata ?? {}),
+                    ...d.metadata,
+                    ...(activeCatalogType === "services" && d.subtype ? { subtype: d.subtype } : {})
+                }
+            };
+
+            const updated = await updateItem(it.id, payload);
+            setItems(prev => prev.map(x => (x.id === it.id ? updated : x)));
+        } catch {
+            setError("Errore nel salvataggio");
+        } finally {
+            setSavingId(null);
+        }
+    };
+
+    /* ----------------------------------------
+       REMOVE
+    ---------------------------------------- */
+    const onRemove = async (id: string) => {
+        setSavingId(id);
+        try {
+            await deleteItem(id);
+            setItems(prev => prev.filter(x => x.id !== id));
+            if (openId === id) setOpenId(null);
+        } catch {
+            setError("Errore nell’eliminazione");
+        } finally {
+            setSavingId(null);
+        }
+    };
+
+    /* ----------------------------------------
+       RENDER
+    ---------------------------------------- */
     if (!isOpen) return null;
 
+    const sorted = [...items].sort((a, b) => a.name.localeCompare(b.name));
+
     return (
-        <div
-            className={styles.overlay}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="catalog-title"
-        >
+        <div className={styles.overlay} role="dialog" aria-modal="true">
             <div className={styles.modal}>
                 <header className={styles.header}>
-                    <div className={styles.headerLeft}>
+                    <div>
                         <Text as="h2" variant="title-md" weight={700}>
                             Catalogo
                         </Text>
                         <Text variant="caption" colorVariant="muted">
-                            Gestisci i contenuti globali riutilizzabili nelle collezioni.
+                            Gestisci i contenuti globali
                         </Text>
                     </div>
-
                     <Button label="Chiudi" variant="ghost" onClick={onClose} />
                 </header>
 
@@ -275,12 +287,33 @@ export default function CatalogManagerModal({ isOpen, onClose }: Props) {
                     <div className={styles.search}>
                         <input
                             ref={firstFocusRef}
-                            className={styles.searchInput}
                             value={query}
                             onChange={e => setQuery(e.target.value)}
-                            placeholder="Cerca un contenuto…"
-                            aria-label="Cerca contenuto"
+                            placeholder="Cerca contenuto…"
                         />
+                    </div>
+
+                    <div className={styles.typeFilter}>
+                        <Text variant="caption" weight={600}>
+                            Tipo
+                        </Text>
+                        <select
+                            value={activeCatalogType}
+                            onChange={e => {
+                                const next = e.target.value as CatalogType;
+                                setActiveCatalogType(next);
+                                // reset solo stato locale legato agli item aperti
+                                setDrafts({});
+                                setOpenId(null);
+                                // NON svuotiamo items: la search effect (query vuota) caricherà la lista del nuovo type
+                                setQuery("");
+                                setError(null);
+                            }}
+                        >
+                            <option value="menu">Menu</option>
+                            <option value="services">Servizi</option>
+                            <option value="products">Prodotti</option>
+                        </select>
                     </div>
 
                     <div className={styles.createRow}>
@@ -288,7 +321,6 @@ export default function CatalogManagerModal({ isOpen, onClose }: Props) {
                             label="Nuovo contenuto"
                             value={createName}
                             onChange={e => setCreateName(e.target.value)}
-                            placeholder="Es. Carbonara"
                             error={createError ?? undefined}
                         />
                         <Button label="Crea" loading={savingId === "create"} onClick={onCreate} />
@@ -296,11 +328,7 @@ export default function CatalogManagerModal({ isOpen, onClose }: Props) {
                 </div>
 
                 <div className={styles.content}>
-                    {error && (
-                        <div className={styles.errorBox} role="alert">
-                            <Text>{error}</Text>
-                        </div>
-                    )}
+                    {error && <Text colorVariant="muted">{error}</Text>}
 
                     {loading && <Text colorVariant="muted">Caricamento…</Text>}
 
@@ -313,186 +341,68 @@ export default function CatalogManagerModal({ isOpen, onClose }: Props) {
                             const isOpenRow = openId === it.id;
                             const d = drafts[it.id];
 
-                            return (
-                                <li key={it.id} className={styles.itemCard}>
-                                    <button
-                                        className={styles.itemHeader}
-                                        onClick={() => onToggle(it)}
-                                        aria-expanded={isOpenRow}
-                                        aria-controls={`item-panel-${it.id}`}
-                                        type="button"
-                                    >
-                                        <div className={styles.itemHeaderLeft}>
-                                            <Text weight={700}>{it.name}</Text>
-                                            {(it.description ?? "").trim() && (
-                                                <Text variant="caption" colorVariant="muted">
-                                                    {it.description}
-                                                </Text>
-                                            )}
-                                        </div>
+                            const fields = getFieldsForCollection(
+                                activeCatalogType,
+                                activeCatalogType === "services" ? d?.subtype ?? "generic" : null
+                            );
 
-                                        <div className={styles.itemHeaderRight}>
-                                            {typeof it.base_price === "number" && (
-                                                <Text weight={700}>
-                                                    € {it.base_price.toFixed(2)}
-                                                </Text>
-                                            )}
-                                            <span className={styles.chevron} aria-hidden />
-                                        </div>
+                            return (
+                                <li key={it.id}>
+                                    <button onClick={() => onToggle(it)}>
+                                        <Text weight={700}>{it.name}</Text>
                                     </button>
 
                                     {isOpenRow && d && (
-                                        <div
-                                            id={`item-panel-${it.id}`}
-                                            className={styles.itemPanel}
-                                        >
-                                            <div className={styles.grid}>
-                                                <div className={styles.fullWidth}>
-                                                    <Text variant="body" weight={600}>
-                                                        Immagine
-                                                    </Text>
+                                        <div>
+                                            {fields.map(field => {
+                                                // FieldDef.key è string => per base bisogna proteggere l’accesso
+                                                const value =
+                                                    field.storage === "base"
+                                                        ? (d.base as Record<string, string>)[
+                                                              field.key
+                                                          ]
+                                                        : d.metadata[field.key];
 
-                                                    {d.image ? (
-                                                        <img
-                                                            src={d.image}
-                                                            alt={d.name}
-                                                            className={styles.imagePreview}
-                                                        />
-                                                    ) : (
-                                                        <Text
-                                                            variant="caption"
-                                                            colorVariant="muted"
-                                                        >
-                                                            Nessuna immagine caricata
-                                                        </Text>
-                                                    )}
+                                                const inputValue =
+                                                    typeof value === "string" ||
+                                                    typeof value === "number"
+                                                        ? value
+                                                        : "";
 
-                                                    <input
-                                                        type="file"
-                                                        accept="image/*"
-                                                        onChange={async e => {
-                                                            const file = e.target.files?.[0];
-                                                            if (!file) return;
+                                                return (
+                                                    <Input
+                                                        key={field.key}
+                                                        label={field.label}
+                                                        value={inputValue}
+                                                        onChange={e => {
+                                                            const v = e.target.value;
 
-                                                            setSavingId(it.id);
-                                                            try {
-                                                                const url =
-                                                                    await uploadCatalogItemImage(
-                                                                        it.id,
-                                                                        file
-                                                                    );
-
-                                                                onChangeDraft(it.id, "image", url);
-                                                            } catch {
-                                                                setError(
-                                                                    "Errore nel caricamento dell'immagine"
-                                                                );
-                                                            } finally {
-                                                                setSavingId(null);
-                                                            }
+                                                            setDrafts(prev => ({
+                                                                ...prev,
+                                                                [it.id]: {
+                                                                    ...prev[it.id],
+                                                                    base:
+                                                                        field.storage === "base"
+                                                                            ? {
+                                                                                  ...prev[it.id]
+                                                                                      .base,
+                                                                                  [field.key]: v
+                                                                              }
+                                                                            : prev[it.id].base,
+                                                                    metadata:
+                                                                        field.storage === "metadata"
+                                                                            ? {
+                                                                                  ...prev[it.id]
+                                                                                      .metadata,
+                                                                                  [field.key]: v
+                                                                              }
+                                                                            : prev[it.id].metadata
+                                                                }
+                                                            }));
                                                         }}
                                                     />
-                                                </div>
-
-                                                <Input
-                                                    label="Nome"
-                                                    value={d.name}
-                                                    onChange={e =>
-                                                        onChangeDraft(it.id, "name", e.target.value)
-                                                    }
-                                                />
-
-                                                <Input
-                                                    label="Prezzo base"
-                                                    value={d.base_price}
-                                                    onChange={e =>
-                                                        onChangeDraft(
-                                                            it.id,
-                                                            "base_price",
-                                                            e.target.value
-                                                        )
-                                                    }
-                                                    placeholder="Es. 12,50"
-                                                    inputMode="decimal"
-                                                />
-
-                                                <Input
-                                                    label="Durata (min)"
-                                                    value={d.duration}
-                                                    onChange={e =>
-                                                        onChangeDraft(
-                                                            it.id,
-                                                            "duration",
-                                                            e.target.value
-                                                        )
-                                                    }
-                                                    placeholder="Es. 30"
-                                                    inputMode="numeric"
-                                                />
-
-                                                <div className={styles.fullWidth}>
-                                                    <label className={styles.textareaLabel}>
-                                                        <Text variant="body" weight={600}>
-                                                            Descrizione
-                                                        </Text>
-                                                    </label>
-                                                    <textarea
-                                                        className={styles.textarea}
-                                                        value={d.description}
-                                                        onChange={e =>
-                                                            onChangeDraft(
-                                                                it.id,
-                                                                "description",
-                                                                e.target.value
-                                                            )
-                                                        }
-                                                        rows={3}
-                                                    />
-                                                </div>
-
-                                                <div className={styles.fullWidth}>
-                                                    <Text variant="body" weight={600}>
-                                                        Allergeni
-                                                    </Text>
-
-                                                    <div className={styles.allergens}>
-                                                        {[
-                                                            "glutine",
-                                                            "lattosio",
-                                                            "frutta a guscio"
-                                                        ].map(a => (
-                                                            <label
-                                                                key={a}
-                                                                className={styles.allergen}
-                                                            >
-                                                                <input
-                                                                    type="checkbox"
-                                                                    checked={(
-                                                                        d.allergens ?? []
-                                                                    ).includes(a)}
-                                                                    onChange={e => {
-                                                                        const current =
-                                                                            d.allergens ?? [];
-                                                                        const next = e.target
-                                                                            .checked
-                                                                            ? [...current, a]
-                                                                            : current.filter(
-                                                                                  x => x !== a
-                                                                              );
-
-                                                                        onChangeDraft(
-                                                                            it.id,
-                                                                            "allergens",
-                                                                            next
-                                                                        );
-                                                                    }}
-                                                                />
-                                                                <Text variant="caption">{a}</Text>
-                                                            </label>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            </div>
+                                                );
+                                            })}
 
                                             <div className={styles.actions}>
                                                 <Button

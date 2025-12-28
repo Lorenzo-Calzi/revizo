@@ -10,19 +10,26 @@ export type FieldType =
 
 export type FieldOption = { value: string; label: string };
 
-export type FieldDef = {
-    key: string; // dove salvarlo (base o metadata)
-    label: string;
-    type: FieldType;
+export type BaseFieldKey = "name" | "description" | "base_price" | "duration";
 
-    // UX
-    placeholder?: string;
-    helpText?: string;
-    required?: boolean;
-
-    // per select
-    options?: FieldOption[];
-
-    // dove persistere
-    storage: "base" | "metadata"; // base -> colonne (name, description, base_price, duration), metadata -> jsonb
-};
+export type FieldDef =
+    | {
+          key: BaseFieldKey;
+          label: string;
+          type: FieldType;
+          storage: "base";
+          placeholder?: string;
+          helpText?: string;
+          required?: boolean;
+          options?: FieldOption[];
+      }
+    | {
+          key: string;
+          label: string;
+          type: FieldType;
+          storage: "metadata";
+          placeholder?: string;
+          helpText?: string;
+          required?: boolean;
+          options?: FieldOption[];
+      };

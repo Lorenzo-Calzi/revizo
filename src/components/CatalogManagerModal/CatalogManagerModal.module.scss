@@ -1,12 +1,12 @@
 @use "@styles/variables" as *;
 
-/* ---------------------------------------------
-   OVERLAY
---------------------------------------------- */
+/* =============================================
+   OVERLAY & MODAL
+============================================= */
 .overlay {
   position: fixed;
   inset: 0;
-  background: rgba(16, 16, 20, 0.5);
+  background: rgba(16, 16, 20, 0.55);
   z-index: 1100;
 
   display: flex;
@@ -15,22 +15,19 @@
   padding: 1.25rem;
 }
 
-/* ---------------------------------------------
-   MODAL
---------------------------------------------- */
 .modal {
-  background: var(--card-bg, #fff);
+  background: #fff;
   width: 100%;
   max-width: 1100px;
   height: 88vh;
 
-  border-radius: 20px;
+  border-radius: 16px;
   overflow: hidden;
 
   display: flex;
   flex-direction: column;
 
-  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.3);
 
   @media (max-width: 720px) {
     height: 100%;
@@ -38,9 +35,9 @@
   }
 }
 
-/* ---------------------------------------------
+/* =============================================
    HEADER
---------------------------------------------- */
+============================================= */
 .header {
   padding: 1.25rem 1.5rem;
   border-bottom: 1px solid var(--border-color, #e5e7eb);
@@ -53,47 +50,30 @@
   background: #fff;
 }
 
-.headerLeft {
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-  min-width: 0;
-}
-
-/* ---------------------------------------------
+/* =============================================
    TOOLBAR
---------------------------------------------- */
+============================================= */
 .toolbar {
-  padding: 1.25rem 1.5rem;
+  padding: 1rem 1.5rem;
   border-bottom: 1px solid var(--border-color, #e5e7eb);
-
-  background: rgba(0, 0, 0, 0.015);
+  background: #fafafa;
 
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 1.25rem;
+  grid-template-columns: 1fr auto auto;
+  gap: 0.75rem;
+  align-items: end;
 
-  @media (min-width: 860px) {
-    grid-template-columns: 1.2fr 1fr;
-    align-items: end;
+  @media (max-width: 900px) {
+    grid-template-columns: 1fr;
   }
 }
 
-.search {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-}
-
-.searchInput {
+.search input {
   width: 100%;
-  padding: 0.8rem 0.95rem;
-
-  border-radius: 12px;
+  padding: 0.7rem 0.85rem;
+  border-radius: 10px;
   border: 1px solid var(--border-color, #e5e7eb);
   background: #fff;
-
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 
   &:focus-visible {
     outline: none;
@@ -102,146 +82,111 @@
   }
 }
 
-/* ---------------------------------------------
-   CREATE ROW
---------------------------------------------- */
-.createRow {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 0.75rem;
-  align-items: end;
-
-  @media (max-width: 520px) {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* ---------------------------------------------
-   CONTENT
---------------------------------------------- */
-.content {
-  padding: 1.5rem;
-  overflow-y: auto;
-
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
-}
-
-/* ---------------------------------------------
-   ERROR BOX
---------------------------------------------- */
-.errorBox {
-  border: 1px solid rgba(220, 38, 38, 0.35);
-  background: rgba(220, 38, 38, 0.08);
-  border-radius: 14px;
-  padding: 0.75rem 1rem;
-}
-
-/* ---------------------------------------------
-   LIST
---------------------------------------------- */
-.list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-
-  display: flex;
-  flex-direction: column;
-  gap: 0.9rem;
-}
-
-/* ---------------------------------------------
-   ITEM CARD (ACCORDION)
---------------------------------------------- */
-.itemCard {
-  border-radius: 16px;
-  overflow: hidden;
-
-  background: #fff;
-  border: 1px solid rgba(0, 0, 0, 0.06);
-}
-
-/* ---------------------------------------------
-   ITEM HEADER
---------------------------------------------- */
-.itemHeader {
-  width: 100%;
-  text-align: left;
-
-  background: transparent;
-  border: none;
-  padding: 1rem 1.25rem;
-
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-
-  cursor: pointer;
-
-  transition: background 0.15s ease;
-
-  &:hover {
-    background: rgba(0, 0, 0, 0.03);
-  }
-
-  &:focus-visible {
-    outline: none;
-    box-shadow: inset 0 0 0 2px rgba($brand-primary, 0.45);
-  }
-}
-
-.itemHeaderLeft {
+.typeFilter {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
-  min-width: 0;
 }
 
-.itemHeaderRight {
+.typeFilter select {
+  padding: 0.55rem 0.75rem;
+  border-radius: 10px;
+  border: 1px solid var(--border-color, #e5e7eb);
+  background: #fff;
+}
+
+.createRow {
   display: flex;
-  gap: 0.75rem;
+  gap: 0.5rem;
+  align-items: end;
+
+  @media (max-width: 520px) {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+/* =============================================
+   CONTENT
+============================================= */
+.content {
+  flex: 1;
+  overflow-y: auto;
+}
+
+/* =============================================
+   LIST (MINIMAL)
+============================================= */
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* =============================================
+   ITEM ROW
+============================================= */
+.list > li {
+  border-bottom: 1px solid var(--border-color, #e5e7eb);
+}
+
+.list > li:last-child {
+  border-bottom: none;
+}
+
+/* HEADER ROW (CLICKABLE) */
+.list > li > button {
+  width: 100%;
+  background: transparent;
+  border: none;
+
+  padding: 0.9rem 1.5rem;
+
+  display: flex;
+  justify-content: space-between;
   align-items: center;
-  flex-shrink: 0;
+
+  cursor: pointer;
+  text-align: left;
+
+  transition: background 0.15s ease;
 }
 
-/* ---------------------------------------------
-   CHEVRON
---------------------------------------------- */
-.chevron {
-  width: 10px;
-  height: 10px;
-  border-right: 2px solid rgba(0, 0, 0, 0.35);
-  border-bottom: 2px solid rgba(0, 0, 0, 0.35);
-  transform: rotate(45deg);
-  transition: transform 0.2s ease;
+.list > li > button:hover {
+  background: rgba(0, 0, 0, 0.035);
 }
 
-/* ---------------------------------------------
-   ITEM PANEL
---------------------------------------------- */
-.itemPanel {
-  border-top: 1px solid var(--border-color, #e5e7eb);
-  padding: 1.25rem;
+.list > li > button:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px rgba($brand-primary, 0.35);
+}
 
-  background: rgba(0, 0, 0, 0.015);
+/* =============================================
+   EXPANDED PANEL
+============================================= */
+.list > li > div {
+  padding: 0 1.5rem 1.5rem;
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.02), rgba(0, 0, 0, 0.01));
 
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
 }
 
-/* ---------------------------------------------
-   GRID
---------------------------------------------- */
+/* =============================================
+   FORM GRID
+============================================= */
 .grid {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 1.25rem;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
 
   @media (min-width: 860px) {
     grid-template-columns: repeat(3, 1fr);
-    align-items: start;
+  }
+
+  @media (max-width: 520px) {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -249,50 +194,66 @@
   grid-column: 1 / -1;
 }
 
-/* ---------------------------------------------
-   TEXTAREA
---------------------------------------------- */
-.textareaLabel {
-  display: inline-block;
-  margin-bottom: 0.35rem;
-}
-
-.textarea {
-  width: 100%;
-  padding: 0.8rem 0.95rem;
-
-  border-radius: 12px;
-  border: 1px solid var(--border-color, #e5e7eb);
-  background: #fff;
-
-  resize: vertical;
-
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
-
-  &:focus-visible {
-    outline: none;
-    border-color: rgba($brand-primary, 0.5);
-    box-shadow: 0 0 0 3px rgba($brand-primary, 0.15);
-  }
-}
-
-/* ---------------------------------------------
+/* =============================================
    ACTIONS
---------------------------------------------- */
+============================================= */
 .actions {
   display: flex;
-  gap: 0.75rem;
-  flex-wrap: wrap;
+  gap: 0.5rem;
   justify-content: flex-end;
+  padding-top: 0.5rem;
 }
 
-.allergens {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+/* =============================================
+   ACCORDION INDICATOR
+============================================= */
+.list > li > button {
+  position: relative;
+  padding-right: 2.5rem;
 }
-.allergen {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
+
+.list > li > button::after {
+  content: "";
+  position: absolute;
+  right: 1.5rem;
+  width: 8px;
+  height: 8px;
+
+  border-right: 2px solid rgba(0, 0, 0, 0.4);
+  border-bottom: 2px solid rgba(0, 0, 0, 0.4);
+
+  transform: rotate(45deg);
+  transition: transform 0.2s ease;
+}
+
+/* ruotiamo quando aperto */
+.list > li > button[aria-expanded="true"]::after {
+  transform: rotate(-135deg);
+}
+
+/* =============================================
+   ACCORDION INDICATOR
+============================================= */
+.list > li > button {
+  position: relative;
+  padding-right: 2.5rem;
+}
+
+.list > li > button::after {
+  content: "";
+  position: absolute;
+  right: 1.5rem;
+  width: 8px;
+  height: 8px;
+
+  border-right: 2px solid rgba(0, 0, 0, 0.4);
+  border-bottom: 2px solid rgba(0, 0, 0, 0.4);
+
+  transform: rotate(45deg);
+  transition: transform 0.2s ease;
+}
+
+/* ruotiamo quando aperto */
+.list > li > button[aria-expanded="true"]::after {
+  transform: rotate(-135deg);
 }
