@@ -12,6 +12,8 @@ const EXIT_ANIMATION_MS = 250; // deve combaciare con la durata in SCSS
 export const ToastItem: React.FC<ToastItemProps> = ({ toast, onRemove }) => {
     const [isLeaving, setIsLeaving] = React.useState(false);
 
+    console.log(toast);
+
     React.useEffect(() => {
         const autoHideTimer = setTimeout(() => {
             setIsLeaving(true);
@@ -47,7 +49,21 @@ export const ToastItem: React.FC<ToastItemProps> = ({ toast, onRemove }) => {
         <div className={`${styles.toast} ${typeClass} ${stateClass}`}>
             <div className={styles.toastContent}>
                 <span className={styles.toastMessage}>{toast.message}</span>
+
+                {toast.actionLabel && toast.onAction && (
+                    <button
+                        type="button"
+                        className={styles.toastAction}
+                        onClick={() => {
+                            toast.onAction?.();
+                            setIsLeaving(true);
+                        }}
+                    >
+                        {toast.actionLabel}
+                    </button>
+                )}
             </div>
+
             <button
                 type="button"
                 className={styles.toastClose}

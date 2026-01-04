@@ -151,7 +151,7 @@
    LEFT PANEL
 ---------------------------------------------------- */
 .left {
-  padding: 18px;
+  padding: 20px;
   overflow-y: auto;
   min-height: 0;
 
@@ -159,6 +159,21 @@
   border-right: 1px solid rgba(0, 0, 0, 0.06);
 
   transition: opacity 0.2s ease;
+}
+
+.emptyState {
+  height: 100%;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+
+  text-align: center;
+
+  background: var(--bg-soft, rgba(0, 0, 0, 0.02));
+  border-radius: 12px;
 }
 
 /* ----------------------------------------------------
@@ -169,6 +184,7 @@
   flex-direction: column;
 
   min-height: 0;
+  position: relative;
   overflow: hidden;
 
   background: linear-gradient(180deg, #f6f7fb 0%, #f3f4f8 100%);
@@ -207,10 +223,10 @@
 .collapseToggle {
   position: absolute;
   top: 50%;
-  left: 342px;
+  left: 347px;
   transform: translateY(-50%);
 
-  padding: 5px;
+  padding: 0px;
 
   border-radius: 50%;
   border: 1px solid rgba(0, 0, 0, 0.08);

@@ -5,7 +5,8 @@ import type {
     CollectionSection,
     CollectionItem,
     Item,
-    CollectionItemWithItem
+    CollectionItemWithItem,
+    ItemCategory
 } from "@/types/database";
 import { resolveCollectionStyle, safeCollectionStyle } from "@/types/collectionStyle";
 import { CatalogType } from "@/types/catalog";
@@ -64,13 +65,13 @@ export async function deleteCollection(id: string): Promise<void> {
 }
 
 /* ============================
-   SECTIONS
+   SECTIONS (DERIVED)
 ============================ */
 
 export async function listSections(collectionId: string): Promise<CollectionSection[]> {
     const { data, error } = await supabase
         .from("collection_sections")
-        .select("*")
+        .select("id, collection_id, base_category_id, label, order_index")
         .eq("collection_id", collectionId)
         .order("order_index");
 
@@ -78,13 +79,14 @@ export async function listSections(collectionId: string): Promise<CollectionSect
     return data ?? [];
 }
 
-export async function createSection(
-    collectionId: string,
-    name: string
+export async function updateSectionLabel(
+    sectionId: string,
+    label: string
 ): Promise<CollectionSection> {
     const { data, error } = await supabase
         .from("collection_sections")
-        .insert({ collection_id: collectionId, name })
+        .update({ label })
+        .eq("id", sectionId)
         .select()
         .single();
 
@@ -92,17 +94,77 @@ export async function createSection(
     return data;
 }
 
+export async function deleteSectionAndItems(sectionId: string): Promise<void> {
+    const { error: itemsError } = await supabase
+        .from("collection_items")
+        .delete()
+        .eq("section_id", sectionId);
+
+    if (itemsError) throw itemsError;
+
+    const { error: sectionError } = await supabase
+        .from("collection_sections")
+        .delete()
+        .eq("id", sectionId);
+
+    if (sectionError) throw sectionError;
+}
+
+export async function updateSectionOrder(sectionId: string, order_index: number) {
+    const { data, error } = await supabase
+        .from("collection_sections")
+        .update({ order_index })
+        .eq("id", sectionId)
+        .select()
+        .single();
+    if (error) throw error;
+    return data;
+}
+
+/* ============================
+   ITEM CATEGORIES
+============================ */
+
+export async function listItemCategories(): Promise<ItemCategory[]> {
+    const { data, error } = await supabase.from("item_categories").select("*").order("name");
+
+    if (error) throw error;
+    return data ?? [];
+}
+
 /* ============================
    ITEMS (GLOBAL)
 ============================ */
 
-export async function searchItems(query: string, type: CatalogType): Promise<Item[]> {
+export async function searchItems(query: string, type: CatalogType) {
     const { data, error } = await supabase
         .from("items")
-        .select("*")
+        .select(
+            `
+            *,
+            category:item_categories ( id, name, slug )
+            `
+        )
         .eq("type", type)
         .ilike("name", `%${query}%`)
         .limit(20);
+
+    if (error) throw error;
+    return data ?? [];
+}
+
+export async function listItems(type: CatalogType, limit = 50) {
+    const { data, error } = await supabase
+        .from("items")
+        .select(
+            `
+            *,
+            category:item_categories ( id, name, slug )
+            `
+        )
+        .eq("type", type)
+        .order("created_at", { ascending: false })
+        .limit(limit);
 
     if (error) throw error;
     return data ?? [];
@@ -114,6 +176,7 @@ export async function createItem(data: {
     base_price?: number;
     duration?: number;
     type: CatalogType;
+    category_id: string;
 }): Promise<Item> {
     const { data: item, error } = await supabase
         .from("items")
@@ -122,25 +185,14 @@ export async function createItem(data: {
             description: data.description ?? null,
             base_price: data.base_price ?? null,
             duration: data.duration ?? null,
-            type: data.type
+            type: data.type,
+            category_id: data.category_id
         })
         .select()
         .single();
 
     if (error) throw error;
     return item;
-}
-
-export async function listItems(type: CatalogType, limit = 50): Promise<Item[]> {
-    const { data, error } = await supabase
-        .from("items")
-        .select("*")
-        .eq("type", type)
-        .order("created_at", { ascending: false })
-        .limit(limit);
-
-    if (error) throw error;
-    return data ?? [];
 }
 
 export async function updateItem(
@@ -164,31 +216,64 @@ export async function deleteItem(id: string): Promise<void> {
 }
 
 /* ============================
-   COLLECTION ITEMS
+   COLLECTION ITEMS (SMART)
 ============================ */
-
-export async function listCollectionItems(collectionId: string): Promise<CollectionItem[]> {
-    const { data, error } = await supabase
-        .from("collection_items")
-        .select("*")
-        .eq("collection_id", collectionId)
-        .order("order_index");
-
-    if (error) throw error;
-    return data ?? [];
-}
 
 export async function addItemToCollection(
     collectionId: string,
-    itemId: string,
-    sectionId?: string
+    itemId: string
 ): Promise<CollectionItem> {
+    // 1) categoria item
+    const { data: item, error: itemError } = await supabase
+        .from("items")
+        .select("id, category_id")
+        .eq("id", itemId)
+        .single();
+
+    if (itemError) throw itemError;
+    if (!item) throw new Error("Item not found");
+
+    // 2) section esistente
+    const { data: existingSection } = await supabase
+        .from("collection_sections")
+        .select("id")
+        .eq("collection_id", collectionId)
+        .eq("base_category_id", item.category_id)
+        .maybeSingle();
+
+    let sectionId = existingSection?.id;
+
+    // 3) crea section se non esiste
+    if (!sectionId) {
+        const { data: category, error: catError } = await supabase
+            .from("item_categories")
+            .select("name")
+            .eq("id", item.category_id)
+            .single();
+
+        if (catError) throw catError;
+
+        const { data: newSection, error: secError } = await supabase
+            .from("collection_sections")
+            .insert({
+                collection_id: collectionId,
+                base_category_id: item.category_id,
+                label: category?.name ?? "Categoria"
+            })
+            .select("id")
+            .single();
+
+        if (secError) throw secError;
+        sectionId = newSection.id;
+    }
+
+    // 4) inserimento collection_item
     const { data, error } = await supabase
         .from("collection_items")
         .insert({
             collection_id: collectionId,
             item_id: itemId,
-            section_id: sectionId ?? null
+            section_id: sectionId
         })
         .select()
         .single();
@@ -199,7 +284,7 @@ export async function addItemToCollection(
 
 export async function updateCollectionItem(
     id: string,
-    fields: Partial<Pick<CollectionItem, "section_id" | "order_index" | "visible">>
+    fields: Partial<Pick<CollectionItem, "order_index" | "visible">>
 ): Promise<CollectionItem> {
     const { data, error } = await supabase
         .from("collection_items")
@@ -214,16 +299,19 @@ export async function updateCollectionItem(
 
 export async function removeItemFromCollection(id: string): Promise<void> {
     const { error } = await supabase.from("collection_items").delete().eq("id", id);
-
     if (error) throw error;
 }
+
+/* ============================
+   BUILDER / PREVIEW
+============================ */
 
 export async function getCollectionBuilderData(collectionId: string) {
     const [{ data: collection }, { data: sections }, { data: items }] = await Promise.all([
         supabase.from("collections").select("*").eq("id", collectionId).single(),
         supabase
             .from("collection_sections")
-            .select("*")
+            .select("id, collection_id, base_category_id, label, order_index")
             .eq("collection_id", collectionId)
             .order("order_index"),
         supabase
@@ -233,27 +321,13 @@ export async function getCollectionBuilderData(collectionId: string) {
             .order("order_index")
     ]);
 
-    if (!collection) {
-        throw new Error("Collection not found");
-    }
+    if (!collection) throw new Error("Collection not found");
 
     return {
         collection,
         sections: sections ?? [],
         items: items ?? []
     };
-}
-
-export async function renameSection(sectionId: string, name: string) {
-    const { data, error } = await supabase
-        .from("collection_sections")
-        .update({ name })
-        .eq("id", sectionId)
-        .select()
-        .single();
-
-    if (error) throw error;
-    return data;
 }
 
 export async function getCollectionItemsWithData(
@@ -269,16 +343,18 @@ export async function getCollectionItemsWithData(
             order_index,
             visible,
             item:items (
-                id,
-                name,
-                description,
-                base_price,
-                duration,
-                metadata,
-                created_at,
-                updated_at
+              id,
+              name,
+              description,
+              base_price,
+              duration,
+              metadata,
+              created_at,
+              updated_at,
+              category_id,
+              category:item_categories ( id, name, slug, created_at )
             )
-        `
+            `
         )
         .eq("collection_id", collectionId)
         .order("order_index");
@@ -287,9 +363,12 @@ export async function getCollectionItemsWithData(
 
     return (data ?? []).map(row => {
         const rawItem = Array.isArray(row.item) ? row.item[0] : row.item;
+        const rawCategory = Array.isArray(rawItem.category)
+            ? rawItem.category[0]
+            : rawItem.category;
 
-        if (!rawItem) {
-            throw new Error("Item relation missing");
+        if (!rawItem || !rawCategory) {
+            throw new Error("Item or category relation missing");
         }
 
         return {
@@ -305,6 +384,13 @@ export async function getCollectionItemsWithData(
                 base_price: rawItem.base_price,
                 duration: rawItem.duration,
                 metadata: rawItem.metadata ?? {},
+                category_id: rawItem.category_id,
+                category: {
+                    id: rawCategory.id,
+                    name: rawCategory.name,
+                    slug: rawCategory.slug,
+                    created_at: rawCategory.created_at
+                },
                 created_at: rawItem.created_at,
                 updated_at: rawItem.updated_at
             }
@@ -312,73 +398,22 @@ export async function getCollectionItemsWithData(
     });
 }
 
-export async function getPreviewCollectionItemsWithOverrides(
-    collectionId: string,
-    businessId: string
-): Promise<CollectionItemWithItem[]> {
-    // 1) item base della collezione
-    const items = await getCollectionItemsWithData(collectionId);
-
-    // 2) override per il business
-    const { data: overrides, error } = await supabase
-        .from("business_item_overrides")
-        .select("item_id, price_override, visible_override")
-        .eq("business_id", businessId);
-
-    if (error) throw error;
-
-    const overrideMap = new Map<string, { price: number | null; visible: boolean | null }>();
-
-    for (const o of overrides ?? []) {
-        overrideMap.set(o.item_id, {
-            price: o.price_override,
-            visible: o.visible_override
-        });
-    }
-
-    // 3) applicazione override
-    return items
-        .map(row => {
-            const override = overrideMap.get(row.item.id);
-
-            const visible = override?.visible ?? row.visible ?? true;
-
-            if (!visible) return null;
-
-            return {
-                ...row,
-                item: {
-                    ...row.item,
-                    base_price: override?.price ?? row.item.base_price
-                }
-            };
-        })
-        .filter(Boolean) as CollectionItemWithItem[];
-}
-
-export async function getPublicCollectionById(
-    collectionId: string,
-    businessId: string
-): Promise<PublicCollection> {
-    const { data: collection, error: collectionError } = await supabase
+export async function getPublicCollectionById(collectionId: string): Promise<PublicCollection> {
+    const { data: collection } = await supabase
         .from("collections")
         .select("id, name, style")
         .eq("id", collectionId)
         .single();
 
-    if (collectionError || !collection) {
-        throw new Error("Collection not found");
-    }
+    if (!collection) throw new Error("Collection not found");
 
     const sections = await listSections(collectionId);
-    const items = await getPreviewCollectionItemsWithOverrides(collectionId, businessId);
+    const items = await getCollectionItemsWithData(collectionId);
 
     const itemsBySection = new Map<string, typeof items>();
 
     for (const it of items) {
         if (!it.visible) continue;
-        if (!it.section_id) continue;
-
         const arr = itemsBySection.get(it.section_id) ?? [];
         arr.push(it);
         itemsBySection.set(it.section_id, arr);
@@ -387,10 +422,9 @@ export async function getPublicCollectionById(
     const publicSections = sections
         .map(section => {
             const sectionItems = itemsBySection.get(section.id) ?? [];
-
             return {
                 id: section.id,
-                name: section.name,
+                name: section.label,
                 items: sectionItems.map(it => ({
                     id: it.id,
                     name: it.item.name,
@@ -400,7 +434,7 @@ export async function getPublicCollectionById(
                 }))
             };
         })
-        .filter(section => section.items.length > 0);
+        .filter(s => s.items.length > 0);
 
     const resolvedStyle = resolveCollectionStyle(safeCollectionStyle(collection.style ?? null), {});
 

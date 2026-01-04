@@ -12,8 +12,8 @@ export default function Home() {
                         Più recensioni, più clienti, meno stress.
                     </Text>
                     <Text colorVariant="muted">
-                        Revizo aiuta ristoratori e professionisti a ottenere più recensioni positive
-                        su Google e migliorare la reputazione online — tutto in automatico.
+                        CataloGlobe aiuta ristoratori e professionisti a ottenere più recensioni
+                        positive su Google e migliorare la reputazione online — tutto in automatico.
                     </Text>
                     <div className={styles.heroCta}>
                         <a href="/dashboard" className={styles.primaryBtn}>

@@ -37,7 +37,9 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({
                 id,
                 message,
                 type,
-                duration
+                duration,
+                actionLabel: options.actionLabel,
+                onAction: options.onAction
             };
 
             setToasts(prev => [...prev, newToast]);

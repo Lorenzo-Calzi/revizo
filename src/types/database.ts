@@ -71,12 +71,21 @@ export interface Item {
     description: string | null;
     base_price: number | null;
     duration: number | null;
-    metadata: {
-        image?: string | null;
-        allergens?: string[];
-    } | null;
+    metadata: { image?: string | null; allergens?: string[] } | null;
+    category_id: string;
     created_at: string;
     updated_at: string;
+}
+
+export interface ItemCategory {
+    id: string;
+    name: string;
+    slug: string;
+    created_at: string;
+}
+
+export interface ItemWithCategory extends Item {
+    category: ItemCategory;
 }
 
 export interface Collection {
@@ -92,14 +101,15 @@ export interface Collection {
 export interface CollectionSection {
     id: string;
     collection_id: string;
-    name: string;
+    base_category_id: string;
+    label: string;
     order_index: number;
 }
 
 export interface CollectionItem {
     id: string;
     collection_id: string;
-    section_id: string | null;
+    section_id: string;
     item_id: string;
     order_index: number;
     visible: boolean;
@@ -137,10 +147,10 @@ export interface BusinessItemOverride {
 export interface CollectionItemWithItem {
     id: string;
     collection_id: string;
-    section_id: string | null;
+    section_id: string;
     order_index: number;
     visible: boolean;
-    item: Item;
+    item: ItemWithCategory;
 }
 
 export interface OverrideRowForUI {

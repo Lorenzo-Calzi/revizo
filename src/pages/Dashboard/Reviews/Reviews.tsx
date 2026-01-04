@@ -226,7 +226,7 @@ export default function Reviews() {
 
                 <div className={styles.commentContainer}>
                     <div className={styles.commentContent}>
-                        <Text variant="body" className={styles.comment}>
+                        <div className={styles.comment}>
                             {comment ? (
                                 <Text variant="body">{displayed}</Text>
                             ) : (
@@ -234,7 +234,7 @@ export default function Reviews() {
                                     Nessun commento
                                 </Text>
                             )}
-                        </Text>
+                        </div>
 
                         {isLong && (
                             <button

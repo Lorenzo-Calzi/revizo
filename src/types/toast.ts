@@ -5,9 +5,14 @@ export interface ToastOptions {
     message: string;
     type?: ToastType;
     duration?: number;
+    actionLabel?: string;
+    onAction?: () => void;
 }
 
-export type Toast = Required<ToastOptions>;
+export type Toast = Required<Omit<ToastOptions, "actionLabel" | "onAction">> & {
+    actionLabel?: string;
+    onAction?: () => void;
+};
 
 export interface ToastContextValue {
     showToast: (options: ToastOptions) => void;

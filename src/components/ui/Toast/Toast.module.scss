@@ -71,6 +71,25 @@
   }
 }
 
+.toastAction {
+  margin-top: 0.25rem;
+  padding: 0;
+  border: none;
+  background: transparent;
+
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.8rem;
+
+  cursor: pointer;
+  text-decoration: underline;
+  opacity: 0.9;
+
+  &:hover {
+    opacity: 1;
+  }
+}
+
 /* Animazioni */
 @keyframes toast-slide-in {
   from {

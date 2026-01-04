@@ -1,32 +1,44 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import styles from "./CollectionBuilderModal.module.scss";
+
+import Text from "@/components/ui/Text/Text";
+import { Button } from "../ui";
+import { ChevronLeft, ChevronRight, Laptop, Smartphone, Tablet } from "lucide-react";
+import { arrayMove } from "@dnd-kit/sortable";
+
 import CollectionPreviewFrame, {
     DeviceMode
 } from "./CollectionPreviewFrame/CollectionPreviewFrame";
-import Text from "@/components/ui/Text/Text";
-import { Button } from "../ui";
-import type { CollectionStyle } from "@/types/collectionStyle";
-import { resolveCollectionStyle, safeCollectionStyle } from "@/types/collectionStyle";
-import { useToast } from "@/context/Toast/ToastContext";
+import CollectionStylePanel from "./CollectionStylePanel/CollectionStylePanel";
+import CollectionView from "../PublicCollectionView/CollectionView/CollectionView";
+import { CollectionSectionsPanel } from "./CollectionSectionsPanel/CollectionSectionsPanel";
+import { SectionItemsPanel } from "./SectionItemsPanel/SectionItemsPanel";
+
+import { Drawer } from "./Drawer/Drawer";
 
 import {
     addItemToCollection,
     createItem,
-    createSection,
+    deleteSectionAndItems,
     getCollectionBuilderData,
     getCollectionItemsWithData,
-    renameSection,
-    searchItems,
+    removeItemFromCollection,
     updateCollection,
-    updateCollectionItem
+    updateCollectionItem,
+    updateItem,
+    updateSectionLabel,
+    updateSectionOrder
 } from "@/services/supabase/collections";
 
 import type { Collection, CollectionItemWithItem, CollectionSection, Item } from "@/types/database";
+import type { CollectionStyle } from "@/types/collectionStyle";
+import { resolveCollectionStyle, safeCollectionStyle } from "@/types/collectionStyle";
+import { CatalogType } from "@/types/catalog";
 
-import CollectionStylePanel from "./CollectionStylePanel/CollectionStylePanel";
-import CollectionContentPanel from "./CollectionContentPanel/CollectionContentPanel";
-import CollectionView from "../PublicCollectionView/CollectionView/CollectionView";
-import { ChevronLeft, ChevronRight, Laptop, Smartphone, Tablet } from "lucide-react";
-import styles from "./CollectionBuilderModal.module.scss";
+import { useToast } from "@/context/Toast/ToastContext";
+import { AddItemDrawer } from "./AddItemDrawer/AddItemDrawer";
+import { CreateItemDrawerRef } from "./CreateItemDrawer/CreateItemDrawer";
+import { EditItemDrawer, EditItemDrawerRef } from "./EditItemDrawer/EditItemDrawer";
 
 type Props = {
     isOpen: boolean;
@@ -42,32 +54,47 @@ type BuilderState = {
     items: CollectionItemWithItem[];
 };
 
+type DrawerState =
+    | { type: "none" }
+    | { type: "add"; defaultTab?: "pick" | "create" }
+    | { type: "edit" };
+
 export default function CollectionBuilderModal({ isOpen, collectionId, onClose }: Props) {
+    /* ---------------------------------------------------------------------
+     * REFS
+     * ------------------------------------------------------------------- */
     const modalRef = useRef<HTMLDivElement | null>(null);
     const previouslyFocusedRef = useRef<HTMLElement | null>(null);
+    const createItemRef = useRef<CreateItemDrawerRef | null>(null);
+    const editItemRef = useRef<EditItemDrawerRef | null>(null);
 
+    /* ---------------------------------------------------------------------
+     * STATE
+     * ------------------------------------------------------------------- */
     const [loading, setLoading] = useState(true);
     const [data, setData] = useState<BuilderState | null>(null);
 
     const [tab, setTab] = useState<ActiveTab>("content");
     const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
 
-    const [search, setSearch] = useState("");
-    const [searchResults, setSearchResults] = useState<Item[]>([]);
-    const [searching, setSearching] = useState(false);
-
     const [mode, setMode] = useState<DeviceMode>("mobile");
-
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
-    const [draggingSectionId, setDraggingSectionId] = useState<string | null>(null);
-    const [draggingItemId, setDraggingItemId] = useState<string | null>(null);
-
-    // Stile (per ora 1 sola opzione)
     const [styleDraft, setStyleDraft] = useState<CollectionStyle>({});
+    const [drawer, setDrawer] = useState<DrawerState>({ type: "none" });
+    const [addDrawerTab, setAddDrawerTab] = useState<"pick" | "create">("pick");
+    const [pickDiff, setPickDiff] = useState<{ add: string[]; remove: string[] }>({
+        add: [],
+        remove: []
+    });
+
+    const [editingItem, setEditingItem] = useState<Item | null>(null);
 
     const { showToast } = useToast();
 
+    /* ---------------------------------------------------------------------
+     * MEMO
+     * ------------------------------------------------------------------- */
     const savedStyle = useMemo(() => safeCollectionStyle(data?.collection.style ?? null), [data]);
 
     const resolvedStyle = useMemo(
@@ -75,55 +102,103 @@ export default function CollectionBuilderModal({ isOpen, collectionId, onClose }
         [savedStyle, styleDraft]
     );
 
-    const refreshItems = useCallback(async (cid: string) => {
-        const refreshed = await getCollectionItemsWithData(cid);
-        setData(prev => (prev ? { ...prev, items: refreshed } : prev));
-    }, []);
+    const sections = useMemo(() => {
+        if (!data) return [];
+        return [...data.sections].sort((a, b) => a.order_index - b.order_index);
+    }, [data]);
 
+    const items = useMemo(() => data?.items ?? [], [data?.items]);
+
+    const itemsInActiveSection = useMemo(() => {
+        if (!activeSectionId) return [];
+        return items
+            .filter(it => it.section_id === activeSectionId)
+            .sort((a, b) => a.order_index - b.order_index);
+    }, [items, activeSectionId]);
+
+    const existingItemIds = useMemo(() => {
+        return new Set((data?.items ?? []).map(row => row.item.id));
+    }, [data?.items]);
+
+    const normalizedCollectionType = useMemo<CatalogType>(() => {
+        switch (data?.collection.collection_type) {
+            case "menu":
+            case "products":
+            case "services":
+            case "events":
+            case "offers":
+                return data.collection.collection_type;
+            default:
+                return "generic";
+        }
+    }, [data?.collection.collection_type]);
+
+    /* ---------------------------------------------------------------------
+     * DATA LOADING
+     * ------------------------------------------------------------------- */
     const load = useCallback(async (cid: string) => {
         setLoading(true);
         try {
             const base = await getCollectionBuilderData(cid);
             const items = await getCollectionItemsWithData(cid);
 
-            const next: BuilderState = {
+            setData({
                 collection: base.collection,
                 sections: base.sections,
                 items
-            };
+            });
 
-            setData(next);
-            setActiveSectionId(next.sections[0]?.id ?? null);
-            setStyleDraft(safeCollectionStyle(next.collection.style));
+            setActiveSectionId(base.sections[0]?.id ?? null);
+            setStyleDraft(safeCollectionStyle(base.collection.style));
         } finally {
             setLoading(false);
         }
     }, []);
 
+    const refreshItems = useCallback(async (cid: string) => {
+        const refreshed = await getCollectionItemsWithData(cid);
+        setData(prev => (prev ? { ...prev, items: refreshed } : prev));
+    }, []);
+
+    /* ---------------------------------------------------------------------
+     * EFFECTS
+     * ------------------------------------------------------------------- */
     useEffect(() => {
         if (!isOpen || !collectionId) return;
         void load(collectionId);
     }, [isOpen, collectionId, load]);
 
-    // ESC close + focus trap basic
+    const closeDrawer = useCallback(() => {
+        setDrawer({ type: "none" });
+        setEditingItem(null);
+        setAddDrawerTab("pick");
+    }, []);
+
+    const handleCloseModal = useCallback(() => {
+        closeDrawer();
+        onClose();
+    }, [closeDrawer, onClose]);
+
     useEffect(() => {
         if (!isOpen) return;
 
-        // salva il focus precedente
         previouslyFocusedRef.current = document.activeElement as HTMLElement | null;
 
         const onKey = (e: KeyboardEvent) => {
             if (e.key === "Escape") {
                 e.preventDefault();
-                onClose();
+
+                if (drawer.type !== "none") {
+                    setDrawer({ type: "none" });
+                    return;
+                }
+
+                handleCloseModal();
             }
         };
 
-        window.addEventListener("keydown", onKey);
-
-        const onKeyDown = (e: KeyboardEvent) => {
-            if (e.key !== "Tab") return;
-            if (!modalRef.current) return;
+        const onTabTrap = (e: KeyboardEvent) => {
+            if (e.key !== "Tab" || !modalRef.current) return;
 
             const focusables = getFocusableElements(modalRef.current);
             if (focusables.length === 0) return;
@@ -131,132 +206,42 @@ export default function CollectionBuilderModal({ isOpen, collectionId, onClose }
             const first = focusables[0];
             const last = focusables[focusables.length - 1];
 
-            if (e.shiftKey) {
-                // Shift + Tab
-                if (document.activeElement === first) {
-                    e.preventDefault();
-                    last.focus();
-                }
-            } else {
-                // Tab
-                if (document.activeElement === last) {
-                    e.preventDefault();
-                    first.focus();
-                }
+            if (e.shiftKey && document.activeElement === first) {
+                e.preventDefault();
+                last.focus();
+            } else if (!e.shiftKey && document.activeElement === last) {
+                e.preventDefault();
+                first.focus();
             }
         };
 
-        window.addEventListener("keydown", onKeyDown);
+        window.addEventListener("keydown", onKey);
+        window.addEventListener("keydown", onTabTrap);
 
-        // focus iniziale sulla modale
-        setTimeout(() => {
-            modalRef.current?.focus();
-        }, 0);
+        setTimeout(() => modalRef.current?.focus(), 0);
 
         return () => {
             window.removeEventListener("keydown", onKey);
-            window.removeEventListener("keydown", onKeyDown);
+            window.removeEventListener("keydown", onTabTrap);
         };
-    }, [isOpen, onClose]);
+    }, [isOpen, drawer.type, handleCloseModal]);
 
     useEffect(() => {
-        if (isOpen) return;
-
-        // ripristina il focus al trigger
-        previouslyFocusedRef.current?.focus();
+        if (!isOpen) {
+            previouslyFocusedRef.current?.focus();
+        }
     }, [isOpen]);
 
-    // Search debounce
     useEffect(() => {
-        if (!search.trim()) {
-            setSearchResults([]);
-            return;
+        if (!isOpen) {
+            setDrawer({ type: "none" });
+            setEditingItem(null);
         }
+    }, [isOpen]);
 
-        const t = setTimeout(async () => {
-            setSearching(true);
-            try {
-                const res = await searchItems(search);
-                setSearchResults(res);
-            } finally {
-                setSearching(false);
-            }
-        }, 300);
-
-        return () => clearTimeout(t);
-    }, [search]);
-
-    const sections = useMemo(() => {
-        if (!data?.sections) return [];
-        return [...data.sections].sort((a, b) => a.order_index - b.order_index);
-    }, [data?.sections]);
-
-    const items = data?.items ?? [];
-
-    const itemsInActiveSection = useMemo(() => {
-        if (!activeSectionId) return [];
-
-        return items
-            .filter(it => it.section_id === activeSectionId)
-            .sort((a, b) => a.order_index - b.order_index);
-    }, [items, activeSectionId]);
-
-    const handleCreateSection = useCallback(
-        async (name: string) => {
-            if (!collectionId) return;
-
-            const created = await createSection(collectionId, name);
-
-            setData(prev => (prev ? { ...prev, sections: [...prev.sections, created] } : prev));
-
-            setActiveSectionId(created.id);
-        },
-        [collectionId]
-    );
-
-    const handleRenameSection = useCallback(async (sectionId: string, name: string) => {
-        const updated = await renameSection(sectionId, name);
-
-        setData(prev =>
-            prev
-                ? {
-                      ...prev,
-                      sections: prev.sections.map(s => (s.id === sectionId ? updated : s))
-                  }
-                : prev
-        );
-    }, []);
-
-    const handleAddItem = useCallback(
-        async (selected: Item) => {
-            if (!collectionId || !activeSectionId) return;
-
-            // 1) se esiste già l'Item globale lo riusi: qui aggiungi direttamente
-            await addItemToCollection(collectionId, selected.id, activeSectionId);
-
-            // 2) refresh items with join
-            await refreshItems(collectionId);
-
-            // pulizia input
-            setSearch("");
-            setSearchResults([]);
-        },
-        [collectionId, activeSectionId, refreshItems]
-    );
-
-    const handleCreateAndAddItem = useCallback(async () => {
-        if (!collectionId || !activeSectionId) return;
-        if (!search.trim()) return;
-
-        const created = await createItem({ name: search.trim() });
-        await addItemToCollection(collectionId, created.id, activeSectionId);
-
-        await refreshItems(collectionId);
-
-        setSearch("");
-        setSearchResults([]);
-    }, [collectionId, activeSectionId, refreshItems, search]);
-
+    /* ---------------------------------------------------------------------
+     * HANDLERS
+     * ------------------------------------------------------------------- */
     const handleToggleVisibility = useCallback(
         async (collectionItemId: string, visible: boolean) => {
             if (!collectionId) return;
@@ -278,128 +263,185 @@ export default function CollectionBuilderModal({ isOpen, collectionId, onClose }
             });
 
             setData(prev => (prev ? { ...prev, collection: updated } : prev));
-
-            // 🔄 riallinea il draft allo stato salvato
             setStyleDraft(safeCollectionStyle(updated.style));
 
-            // ✅ TOAST SUCCESS
             showToast({
                 type: "success",
                 message: "Stile salvato correttamente",
                 duration: 2500
             });
-        } catch (error) {
-            // ❌ TOAST ERROR
+        } catch {
             showToast({
                 type: "error",
                 message: "Errore nel salvataggio dello stile",
                 duration: 3000
             });
         }
-    }, [data, styleDraft]);
+    }, [data, styleDraft, showToast]);
+
+    const handleReorder = useCallback(
+        async (activeId: string, overId: string) => {
+            if (!data) return;
+
+            const sectionItems = itemsInActiveSection;
+
+            const oldIndex = sectionItems.findIndex(it => it.id === activeId);
+            const newIndex = sectionItems.findIndex(it => it.id === overId);
+
+            if (oldIndex === -1 || newIndex === -1) return;
+
+            const reordered = arrayMove(sectionItems, oldIndex, newIndex);
+
+            // optimistic update
+            setData(prev => {
+                if (!prev) return prev;
+
+                const updatedItems = prev.items.map(it => {
+                    const idx = reordered.findIndex(r => r.id === it.id);
+                    return idx === -1 ? it : { ...it, order_index: idx };
+                });
+
+                return { ...prev, items: updatedItems };
+            });
+
+            // persist
+            await Promise.all(
+                reordered.map((it, index) => updateCollectionItem(it.id, { order_index: index }))
+            );
+        },
+        [data, itemsInActiveSection]
+    );
 
     const handleReorderSections = useCallback(
-        (sourceId: string, targetId: string) => {
+        async (activeId: string, overId: string) => {
             if (!data) return;
-            if (sourceId === targetId) return;
 
-            const current = [...data.sections];
-            const sourceIndex = current.findIndex(s => s.id === sourceId);
-            const targetIndex = current.findIndex(s => s.id === targetId);
+            const oldIndex = data.sections.findIndex(s => s.id === activeId);
+            const newIndex = data.sections.findIndex(s => s.id === overId);
 
-            if (sourceIndex === -1 || targetIndex === -1) return;
+            if (oldIndex === -1 || newIndex === -1) return;
 
-            const reordered = [...current];
-            const [moved] = reordered.splice(sourceIndex, 1);
-            reordered.splice(targetIndex, 0, moved);
+            const reordered = arrayMove(data.sections, oldIndex, newIndex);
 
-            const withOrder = reordered.map((s, index) => ({
-                ...s,
-                order_index: index
-            }));
+            // optimistic update
+            setData(prev =>
+                prev
+                    ? {
+                          ...prev,
+                          sections: reordered.map((s, index) => ({
+                              ...s,
+                              order_index: index
+                          }))
+                      }
+                    : prev
+            );
 
-            setData(prev => (prev ? { ...prev, sections: withOrder } : prev));
+            // persist
+            await Promise.all(reordered.map((s, index) => updateSectionOrder(s.id, index)));
         },
         [data]
     );
 
-    const handleReorderItems = useCallback(
-        (sourceId: string, targetId: string) => {
-            if (!data || !activeSectionId) return;
-            if (sourceId === targetId) return;
+    const handleRenameSection = useCallback(async (sectionId: string, label: string) => {
+        if (!label.trim()) return;
 
-            const current = data.items.filter(it => it.section_id === activeSectionId);
+        setData(prev => {
+            if (!prev) return prev;
+            return {
+                ...prev,
+                sections: prev.sections.map(s =>
+                    s.id === sectionId ? { ...s, label: label.trim() } : s
+                )
+            };
+        });
 
-            const sourceIndex = current.findIndex(it => it.id === sourceId);
-            const targetIndex = current.findIndex(it => it.id === targetId);
+        await updateSectionLabel(sectionId, label.trim());
+    }, []);
 
-            if (sourceIndex === -1 || targetIndex === -1) return;
+    const handleDeleteSection = useCallback(
+        async (sectionId: string) => {
+            if (!data) return;
 
-            const reordered = [...current];
-            const [moved] = reordered.splice(sourceIndex, 1);
-            reordered.splice(targetIndex, 0, moved);
-
-            const withOrder = reordered.map((it, index) => ({
-                ...it,
-                order_index: index
-            }));
-
+            // optimistic update
             setData(prev => {
                 if (!prev) return prev;
 
-                const others = prev.items.filter(it => it.section_id !== activeSectionId);
-
                 return {
                     ...prev,
-                    items: [...others, ...withOrder]
+                    sections: prev.sections.filter(s => s.id !== sectionId),
+                    items: prev.items.filter(it => it.section_id !== sectionId)
                 };
             });
+
+            // aggiorna active section se serve
+            if (activeSectionId === sectionId) {
+                const remaining = sections.filter(s => s.id !== sectionId);
+                setActiveSectionId(remaining[0]?.id ?? null);
+            }
+
+            await deleteSectionAndItems(sectionId);
+
+            await refreshItems(data.collection.id);
         },
-        [data, activeSectionId]
+        [data, activeSectionId, sections, refreshItems]
     );
 
-    const persistSectionOrder = useCallback(async () => {
+    const reloadSectionsAndItems = useCallback(async (cid: string) => {
+        const [base, freshItems] = await Promise.all([
+            getCollectionBuilderData(cid), // contiene sections dal DB
+            getCollectionItemsWithData(cid)
+        ]);
+
+        setData(prev =>
+            prev
+                ? { ...prev, sections: base.sections, items: freshItems }
+                : { collection: base.collection, sections: base.sections, items: freshItems }
+        );
+
+        return { sections: base.sections, items: freshItems };
+    }, []);
+
+    const applyPickDiff = async () => {
         if (!data) return;
 
-        await Promise.all(data.sections.map(s => renameSection(s.id, s.name, s.order_index)));
-    }, [data]);
+        // 1) aggiunte
+        for (const itemId of pickDiff.add) {
+            await addItemToCollection(data.collection.id, itemId);
+        }
 
-    const persistItemOrder = useCallback(async () => {
-        if (!data || !activeSectionId) return;
+        // 2) rimozioni
+        for (const itemId of pickDiff.remove) {
+            const row = data.items.find(it => it.item.id === itemId);
+            if (!row) continue;
+            await removeItemFromCollection(row.id);
+        }
 
-        const itemsToSave = data.items.filter(it => it.section_id === activeSectionId);
+        // 3) refetch atomico
+        const { sections } = await reloadSectionsAndItems(data.collection.id);
 
-        await Promise.all(
-            itemsToSave.map(it =>
-                updateCollectionItem(it.id, {
-                    order_index: it.order_index
-                })
-            )
-        );
-    }, [data, activeSectionId]);
+        // 4) UX: active section
+        setActiveSectionId(prev => prev ?? sections[0]?.id ?? null);
 
-    function getFocusableElements(container: HTMLElement): HTMLElement[] {
-        const selectors = [
-            "a[href]",
-            "button:not([disabled])",
-            "textarea:not([disabled])",
-            "input:not([disabled])",
-            "select:not([disabled])",
-            '[tabindex]:not([tabindex="-1"])'
-        ];
+        // 5) reset + close
+        setPickDiff({ add: [], remove: [] });
+        setDrawer({ type: "none" });
+    };
 
-        return Array.from(container.querySelectorAll<HTMLElement>(selectors.join(",")));
-    }
-
+    /* ---------------------------------------------------------------------
+     * RENDER GUARD
+     * ------------------------------------------------------------------- */
     if (!isOpen || !collectionId) return null;
 
+    /* ---------------------------------------------------------------------
+     * RENDER
+     * ------------------------------------------------------------------- */
     return (
         <div
             className={styles.overlay}
             role="dialog"
             aria-modal="true"
             aria-labelledby="collection-builder-title"
-            onClick={onClose}
+            onClick={handleCloseModal}
         >
             <div
                 className={styles.modal}
@@ -414,75 +456,77 @@ export default function CollectionBuilderModal({ isOpen, collectionId, onClose }
                             {data?.collection.name ?? "Collezione"}
                         </Text>
 
-                        <div className={styles.tabs} role="tablist" aria-label="Sezioni builder">
+                        <div className={styles.tabs} role="tablist">
                             <button
                                 type="button"
-                                className={tab === "content" ? styles.tabActive : styles.tab}
                                 role="tab"
                                 aria-selected={tab === "content"}
+                                className={tab === "content" ? styles.tabActive : styles.tab}
                                 onClick={() => setTab("content")}
                             >
-                                <Text variant="body" weight={600}>
-                                    Contenuto
-                                </Text>
+                                <Text weight={600}>Contenuto</Text>
                             </button>
 
                             <button
                                 type="button"
-                                className={tab === "style" ? styles.tabActive : styles.tab}
                                 role="tab"
                                 aria-selected={tab === "style"}
+                                className={tab === "style" ? styles.tabActive : styles.tab}
                                 onClick={() => setTab("style")}
                             >
-                                <Text variant="body" weight={600}>
-                                    Stile
-                                </Text>
+                                <Text weight={600}>Stile</Text>
                             </button>
                         </div>
                     </div>
 
                     <div className={styles.headerRight}>
-                        <div
-                            className={styles.deviceGroup}
-                            role="radiogroup"
-                            aria-label="Modalità anteprima"
-                        >
-                            <button
-                                type="button"
-                                role="radio"
-                                aria-checked={mode === "mobile"}
-                                className={mode === "mobile" ? styles.deviceActive : styles.device}
-                                onClick={() => setMode("mobile")}
-                            >
-                                <Smartphone size={20} />
-                            </button>
+                        {tab === "content" ? (
+                            <Button onClick={() => setTab("style")} label="Anteprima" />
+                        ) : (
+                            <div className={styles.deviceGroup} role="radiogroup">
+                                <button
+                                    type="button"
+                                    role="radio"
+                                    aria-checked={mode === "mobile"}
+                                    className={
+                                        mode === "mobile" ? styles.deviceActive : styles.device
+                                    }
+                                    onClick={() => setMode("mobile")}
+                                >
+                                    <Smartphone size={20} />
+                                </button>
 
-                            <button
-                                type="button"
-                                role="radio"
-                                aria-checked={mode === "tablet"}
-                                className={mode === "tablet" ? styles.deviceActive : styles.device}
-                                onClick={() => setMode("tablet")}
-                            >
-                                <Tablet size={20} />
-                            </button>
+                                <button
+                                    type="button"
+                                    role="radio"
+                                    aria-checked={mode === "tablet"}
+                                    className={
+                                        mode === "tablet" ? styles.deviceActive : styles.device
+                                    }
+                                    onClick={() => setMode("tablet")}
+                                >
+                                    <Tablet size={20} />
+                                </button>
 
-                            <button
-                                type="button"
-                                role="radio"
-                                aria-checked={mode === "desktop"}
-                                className={mode === "desktop" ? styles.deviceActive : styles.device}
-                                onClick={() => setMode("desktop")}
-                            >
-                                <Laptop />
-                            </button>
-                        </div>
+                                <button
+                                    type="button"
+                                    role="radio"
+                                    aria-checked={mode === "desktop"}
+                                    className={
+                                        mode === "desktop" ? styles.deviceActive : styles.device
+                                    }
+                                    onClick={() => setMode("desktop")}
+                                >
+                                    <Laptop />
+                                </button>
+                            </div>
+                        )}
 
                         {tab === "style" && (
                             <Button variant="primary" onClick={handleSaveStyle} label="Salva" />
                         )}
 
-                        <Button variant="ghost" onClick={onClose} label="Chiudi" />
+                        <Button variant="secondary" onClick={handleCloseModal} label="Chiudi" />
                     </div>
                 </header>
 
@@ -497,37 +541,37 @@ export default function CollectionBuilderModal({ isOpen, collectionId, onClose }
                         {isSidebarOpen ? <ChevronLeft /> : <ChevronRight />}
                     </button>
 
-                    {/* LEFT PANEL */}
+                    {/* LEFT */}
                     <aside className={styles.left}>
                         {tab === "content" ? (
-                            <CollectionContentPanel
-                                sections={sections}
-                                itemsInActiveSection={itemsInActiveSection}
-                                activeSectionId={activeSectionId}
-                                search={search}
-                                searching={searching}
-                                searchResults={searchResults}
-                                onSelectSection={setActiveSectionId}
-                                onCreateSection={handleCreateSection}
-                                onSearchChange={setSearch}
-                                onCreateItem={handleCreateAndAddItem}
-                                onAddItem={handleAddItem}
-                                onToggleVisibility={handleToggleVisibility}
-                                draggingSectionId={draggingSectionId}
-                                onDragStart={id => setDraggingSectionId(id)}
-                                onDragEnd={async () => {
-                                    setDraggingSectionId(null);
-                                    await persistSectionOrder();
-                                }}
-                                onReorderSections={handleReorderSections}
-                                draggingItemId={draggingItemId}
-                                onItemDragStart={id => setDraggingItemId(id)}
-                                onItemDragEnd={async () => {
-                                    setDraggingItemId(null);
-                                    await persistItemOrder();
-                                }}
-                                onReorderItems={handleReorderItems}
-                            />
+                            sections.length === 0 ? (
+                                <div className={styles.emptyState}>
+                                    <Text variant="title-sm" weight={600}>
+                                        La tua collezione è vuota
+                                    </Text>
+                                    <Text colorVariant="muted">
+                                        Aggiungi elementi dal catalogo per creare automaticamente le
+                                        categorie.
+                                    </Text>
+                                    <Button
+                                        variant="primary"
+                                        label="Aggiungi elementi"
+                                        onClick={() => {
+                                            setAddDrawerTab("pick");
+                                            setDrawer({ type: "add", defaultTab: "pick" });
+                                        }}
+                                    />
+                                </div>
+                            ) : (
+                                <CollectionSectionsPanel
+                                    sections={sections}
+                                    activeSectionId={activeSectionId}
+                                    onSelectSection={setActiveSectionId}
+                                    onReorderSections={handleReorderSections}
+                                    onRenameSection={handleRenameSection}
+                                    onDeleteSection={handleDeleteSection}
+                                />
+                            )
                         ) : (
                             <CollectionStylePanel
                                 styleDraft={styleDraft}
@@ -537,43 +581,226 @@ export default function CollectionBuilderModal({ isOpen, collectionId, onClose }
                         )}
                     </aside>
 
-                    {/* RIGHT PREVIEW */}
-                    <section className={styles.right} aria-label="Anteprima collezione">
-                        <CollectionPreviewFrame mode={mode}>
-                            <CollectionView
-                                mode="preview"
-                                businessName={"PREVIEW"}
-                                businessImage={""}
-                                collectionTitle={data?.collection.name ?? "Collezione"}
-                                sections={sections.map(s => ({
-                                    id: s.id,
-                                    name: s.name,
-                                    items: items
-                                        .filter(ci => ci.visible && ci.section_id === s.id)
-                                        .sort((a, b) => a.order_index - b.order_index)
-                                        .map(ci => ({
-                                            id: ci.id,
-                                            name: ci.item.name,
-                                            description: ci.item.description ?? null,
-                                            image: ci.item.metadata?.image ?? null,
-                                            price:
-                                                ci.item.base_price != null
-                                                    ? Number(ci.item.base_price)
-                                                    : null
-                                        }))
-                                }))}
-                                style={resolvedStyle}
-                            />
-                        </CollectionPreviewFrame>
+                    {/* RIGHT */}
+                    <section className={styles.right}>
+                        {tab === "content" && (
+                            <>
+                                <SectionItemsPanel
+                                    sectionLabel={
+                                        sections.find(s => s.id === activeSectionId)?.label ?? ""
+                                    }
+                                    items={itemsInActiveSection}
+                                    onToggleVisibility={handleToggleVisibility}
+                                    onAddItem={() => {
+                                        setAddDrawerTab("pick");
+                                        setDrawer({ type: "add", defaultTab: "pick" });
+                                    }}
+                                    onEditItem={row => {
+                                        setEditingItem(row.item);
+                                        setDrawer({ type: "edit" });
+                                    }}
+                                    onRemoveItem={async collectionItemId => {
+                                        if (!data) return;
+
+                                        try {
+                                            const removedItem = items.find(
+                                                it => it.id === collectionItemId
+                                            );
+                                            if (!removedItem) return;
+
+                                            await removeItemFromCollection(collectionItemId);
+                                            await refreshItems(data.collection.id);
+
+                                            showToast({
+                                                message: "Elemento rimosso dalla categoria.",
+                                                type: "success",
+                                                duration: 4000,
+                                                actionLabel: "Annulla",
+                                                onAction: async () => {
+                                                    try {
+                                                        await addItemToCollection(
+                                                            removedItem.collection_id,
+                                                            removedItem.item.id
+                                                        );
+
+                                                        await refreshItems(data.collection.id);
+                                                    } catch (e) {
+                                                        console.error(
+                                                            "Errore aggiunta business:",
+                                                            e
+                                                        );
+                                                        showToast({
+                                                            message:
+                                                                "Errore durante il ripristino dell'elemento.",
+                                                            type: "error",
+                                                            duration: 2500
+                                                        });
+                                                    }
+                                                }
+                                            });
+                                        } catch (e) {
+                                            console.error("Errore rimozione elemento:", e);
+                                            showToast({
+                                                message:
+                                                    "Errore durante la rimozione dell'elemento.",
+                                                type: "error",
+                                                duration: 2500
+                                            });
+                                        }
+                                    }}
+                                    onReorder={handleReorder}
+                                />
+
+                                {/* DRAWER */}
+                                <Drawer
+                                    isOpen={drawer.type !== "none"}
+                                    title={
+                                        drawer.type === "edit"
+                                            ? "Modifica elemento"
+                                            : "Aggiungi elemento"
+                                    }
+                                    onClose={closeDrawer}
+                                    footer={
+                                        drawer.type === "add" && addDrawerTab === "pick" ? (
+                                            <Button
+                                                variant="primary"
+                                                label="Applica modifiche"
+                                                disabled={
+                                                    pickDiff.add.length === 0 &&
+                                                    pickDiff.remove.length === 0
+                                                }
+                                                onClick={applyPickDiff}
+                                            />
+                                        ) : drawer.type === "add" && addDrawerTab === "create" ? (
+                                            <Button
+                                                variant="primary"
+                                                label="Crea elemento"
+                                                onClick={() => createItemRef.current?.submit()}
+                                            />
+                                        ) : drawer.type === "edit" ? (
+                                            <>
+                                                <Button
+                                                    variant="ghost"
+                                                    label="Annulla"
+                                                    onClick={closeDrawer}
+                                                />
+                                                <Button
+                                                    variant="primary"
+                                                    label="Salva modifiche"
+                                                    onClick={() => editItemRef.current?.submit()}
+                                                />
+                                            </>
+                                        ) : null
+                                    }
+                                >
+                                    {drawer.type === "add" && data && (
+                                        <AddItemDrawer
+                                            createRef={createItemRef}
+                                            collectionType={normalizedCollectionType}
+                                            existingItemIds={existingItemIds}
+                                            defaultTab={drawer.defaultTab ?? "pick"}
+                                            onPickDiffChange={setPickDiff}
+                                            onTabChange={setAddDrawerTab}
+                                            onCreate={async payload => {
+                                                if (!data) return;
+
+                                                const item = await createItem(payload);
+                                                await addItemToCollection(
+                                                    data.collection.id,
+                                                    item.id
+                                                );
+
+                                                await reloadSectionsAndItems(data.collection.id);
+                                                setDrawer({ type: "none" });
+                                            }}
+                                        />
+                                    )}
+
+                                    {drawer.type === "edit" && editingItem && (
+                                        <EditItemDrawer
+                                            ref={editItemRef}
+                                            item={editingItem}
+                                            collectionType={normalizedCollectionType}
+                                            onSubmit={async payload => {
+                                                // 1) aggiorna item globale
+                                                await updateItem(payload.id, {
+                                                    name: payload.name,
+                                                    description: payload.description ?? null,
+                                                    base_price: payload.base_price ?? null,
+                                                    duration: payload.duration ?? null
+                                                });
+
+                                                // 2) refresh lista in collection
+                                                if (data) await refreshItems(data.collection.id);
+
+                                                // 3) chiudi
+                                                closeDrawer();
+
+                                                showToast({
+                                                    type: "success",
+                                                    message: "Elemento aggiornato",
+                                                    duration: 2500
+                                                });
+                                            }}
+                                        />
+                                    )}
+                                </Drawer>
+                            </>
+                        )}
+
+                        {tab === "style" && (
+                            <CollectionPreviewFrame mode={mode}>
+                                <CollectionView
+                                    mode="preview"
+                                    businessName="PREVIEW"
+                                    businessImage=""
+                                    collectionTitle={data?.collection.name ?? "Collezione"}
+                                    sections={sections.map(s => ({
+                                        id: s.id,
+                                        name: s.label,
+                                        items: items
+                                            .filter(ci => ci.visible && ci.section_id === s.id)
+                                            .sort((a, b) => a.order_index - b.order_index)
+                                            .map(ci => ({
+                                                id: ci.id,
+                                                name: ci.item.name,
+                                                description: ci.item.description ?? null,
+                                                image: ci.item.metadata?.image ?? null,
+                                                price:
+                                                    ci.item.base_price != null
+                                                        ? Number(ci.item.base_price)
+                                                        : null
+                                            }))
+                                    }))}
+                                    style={resolvedStyle}
+                                />
+                            </CollectionPreviewFrame>
+                        )}
                     </section>
                 </div>
 
                 {loading && (
                     <div className={styles.loadingOverlay} aria-live="polite">
-                        <Text variant="body">Caricamento…</Text>
+                        <Text>Caricamento…</Text>
                     </div>
                 )}
             </div>
         </div>
     );
+}
+
+/* -------------------------------------------------------------------------
+ * UTILS
+ * ---------------------------------------------------------------------- */
+function getFocusableElements(container: HTMLElement): HTMLElement[] {
+    const selectors = [
+        "a[href]",
+        "button:not([disabled])",
+        "textarea:not([disabled])",
+        "input:not([disabled])",
+        "select:not([disabled])",
+        '[tabindex]:not([tabindex="-1"])'
+    ];
+
+    return Array.from(container.querySelectorAll<HTMLElement>(selectors.join(",")));
 }
