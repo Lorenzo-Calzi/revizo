@@ -7,6 +7,7 @@ import { QRCodeSVG } from "qrcode.react";
 import { MoreVertical } from "lucide-react";
 import type { BusinessCardProps } from "@/types/Businesses";
 import styles from "./BusinessCard.module.scss";
+import BusinessCollectionScheduleModal from "../BusinessCollectionScheduleModal/BusinessCollectionScheduleModal";
 
 export const BusinessCard: React.FC<BusinessCardProps> = ({
     business,
@@ -20,6 +21,7 @@ export const BusinessCard: React.FC<BusinessCardProps> = ({
     const [showMenu, setShowMenu] = useState(false);
     const [showSelectCollection, setShowSelectCollection] = useState(false);
     const [overrideOpen, setOverrideOpen] = useState(false);
+    const [showScheduleModal, setShowScheduleModal] = useState(false);
 
     // ✅ STATO LOCALE SORGENTE DI VERITÀ
     const [activeCollectionId, setActiveCollectionId] = useState<string | null>(
@@ -140,6 +142,16 @@ export const BusinessCard: React.FC<BusinessCardProps> = ({
 
                         <button
                             className={styles.secondary}
+                            onClick={() => {
+                                setShowScheduleModal(true);
+                                setShowMenu(false);
+                            }}
+                        >
+                            Contenuti & Orari
+                        </button>
+
+                        <button
+                            className={styles.secondary}
                             onClick={() => onOpenReviews(business.id)}
                         >
                             Recensioni
@@ -226,6 +238,12 @@ export const BusinessCard: React.FC<BusinessCardProps> = ({
                     setActiveCollectionId(newId);
                     setShowSelectCollection(false);
                 }}
+            />
+
+            <BusinessCollectionScheduleModal
+                isOpen={showScheduleModal}
+                businessId={business.id}
+                onClose={() => setShowScheduleModal(false)}
             />
         </>
     );

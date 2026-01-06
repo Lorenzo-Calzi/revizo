@@ -5,9 +5,10 @@ import PublicCollectionView from "@/components/PublicCollectionView/PublicCollec
 
 import { getBusinessBySlug } from "@/services/supabase/businesses";
 import { getPublicCollectionById } from "@/services/supabase/collections";
+import { resolveBusinessCollections } from "@/services/supabase/resolveBusinessCollections";
 
 import type { PublicCollection } from "@/types/collectionPublic";
-import { Business } from "@/types/database";
+import type { Business } from "@/types/database";
 
 type PageState =
     | { status: "loading" }
@@ -16,6 +17,7 @@ type PageState =
           status: "ready";
           business: Business;
           collection: PublicCollection;
+          overlayCollection: PublicCollection | null;
       };
 
 export default function PublicCollectionPage() {
@@ -30,37 +32,53 @@ export default function PublicCollectionPage() {
             });
             return;
         }
-        const businessSlug = slug;
 
+        const businessSlug = slug;
         let cancelled = false;
 
         async function load() {
             try {
                 setState({ status: "loading" });
 
-                // 1) recupero business
+                /* ============================
+                   1) BUSINESS
+                ============================ */
                 const business = await getBusinessBySlug(businessSlug);
 
                 if (!business) {
                     throw new Error("Attività non trovata.");
                 }
 
-                if (!business.active_collection_id) {
-                    throw new Error("Nessuna collection attiva.");
+                /* ============================
+                   2) RESOLVER
+                ============================ */
+                const resolved = await resolveBusinessCollections(business.id);
+
+                if (!resolved.primary) {
+                    throw new Error("Nessun contenuto disponibile.");
                 }
 
-                // 2) recupero collection pubblica
-                const publicCollection = await getPublicCollectionById(
-                    business.active_collection_id,
-                    business.id
-                );
+                /* ============================
+                   3) COLLECTION PRIMARY
+                ============================ */
+                const collection = await getPublicCollectionById(resolved.primary);
+
+                /* ============================
+                   4) OVERLAY (opzionale)
+                ============================ */
+                let overlayCollection: PublicCollection | null = null;
+
+                if (resolved.overlay) {
+                    overlayCollection = await getPublicCollectionById(resolved.overlay);
+                }
 
                 if (cancelled) return;
 
                 setState({
                     status: "ready",
                     business,
-                    collection: publicCollection
+                    collection,
+                    overlayCollection
                 });
             } catch (err) {
                 if (cancelled) return;
@@ -101,5 +119,11 @@ export default function PublicCollectionPage() {
         );
     }
 
-    return <PublicCollectionView business={state.business} collection={state.collection} />;
+    return (
+        <PublicCollectionView
+            business={state.business}
+            collection={state.collection}
+            overlayCollection={state.overlayCollection}
+        />
+    );
 }

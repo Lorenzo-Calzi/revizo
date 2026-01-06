@@ -74,7 +74,7 @@ export default function CollectionView({
 
         els.forEach(el => observer.observe(el));
         return () => observer.disconnect();
-    }, [mode]);
+    }, [mode, sections]);
 
     const navItems: SectionNavItem[] = useMemo(
         () => sections.map(s => ({ id: s.id, name: s.name })),
